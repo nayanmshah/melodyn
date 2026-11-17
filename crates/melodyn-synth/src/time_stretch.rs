@@ -6,7 +6,6 @@
 //! editing capabilities.
 
 use crate::overlap_add::{OverlapAddConfig, OverlapAddProcessor};
-use std::f64::consts::PI;
 
 // ---------------------------------------------------------------------------
 // Warp function

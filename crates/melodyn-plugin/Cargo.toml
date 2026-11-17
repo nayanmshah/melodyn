@@ -7,6 +7,4 @@ license.workspace = true
 
 [dependencies]
 melodyn-core = { workspace = true }
-melodyn-synth = { workspace = true }
-thiserror = { workspace = true }
 log = { workspace = true }
