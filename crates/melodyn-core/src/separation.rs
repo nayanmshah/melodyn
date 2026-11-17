@@ -554,7 +554,11 @@ pub fn inverse_stft(
     let engine = FftEngine::new(fft_size, window_type);
     let window = compute_window(window_type, fft_size);
 
-    let total_len = (num_frames - 1) * hop_size + fft_size;
+    let total_len = if num_frames > 0 {
+        (num_frames - 1) * hop_size + fft_size
+    } else {
+        0
+    };
     let out_len = total_len.max(output_len);
     let mut output = vec![0.0f64; out_len];
     let mut window_sum = vec![0.0f64; out_len];
@@ -573,10 +577,21 @@ pub fn inverse_stft(
         }
     }
 
+    // Compute steady-state window_sum (the value in the well-covered interior).
+    // Use this as a minimum threshold to avoid edge amplification.
+    let max_window_sum = window_sum
+        .iter()
+        .copied()
+        .fold(0.0f64, f64::max);
+    let min_window_sum = max_window_sum * 0.1;
+
     // Normalize by window sum (overlap-add normalization)
     for i in 0..output.len().min(output_len) {
-        if window_sum[i] > 1e-10 {
+        if window_sum[i] > min_window_sum {
             output[i] /= window_sum[i];
+        } else if window_sum[i] > 1e-10 {
+            // Edge region: apply the steady-state normalization to avoid amplification
+            output[i] /= max_window_sum.max(1e-10);
         }
     }
 
