@@ -32,6 +32,7 @@ fn harmonic_tone(freq: f64, num_harmonics: usize, sample_rate: f64, num_samples:
 }
 
 /// Generate a click / impulse train at a given BPM.
+#[allow(dead_code)]
 fn click_track(bpm: f64, sample_rate: f64, duration_secs: f64) -> Vec<f64> {
     let total_samples = (sample_rate * duration_secs) as usize;
     let period_samples = (60.0 / bpm * sample_rate) as usize;
@@ -1245,7 +1246,7 @@ fn test_full_pipeline_integration() {
 
     // Step 4: Tempo analysis (from notes)
     let tempo_analyzer = melodyn_core::TempoAnalyzer::new(Default::default());
-    let tempo_result = tempo_analyzer.analyze_notes(&notes_for_analysis, analysis.duration);
+    let _tempo_result = tempo_analyzer.analyze_notes(&notes_for_analysis, analysis.duration);
     // With regular note onsets, it should detect a tempo
     // This may fail for very short passages, so we just verify no panics
 
