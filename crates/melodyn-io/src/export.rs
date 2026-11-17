@@ -597,19 +597,13 @@ mod tests {
 
         // Verify the dithered version is close but not identical to original.
         let read_back = crate::wav::read_wav(&path).expect("read dithered wav");
-        let mut exact_match_count = 0;
         let mut total = 0;
         for i in 0..read_back.num_samples() {
             let diff = (read_back.get(0, i) - buffer.get(0, i)).abs();
             assert!(diff < 0.01, "Dithered sample {} too far from original", i);
-            if diff < 1e-10 {
-                exact_match_count += 1;
-            }
             total += 1;
         }
-        // Dithering should change *some* samples (not all will be exact).
-        // But quantization error might coincidentally make some match. Just
-        // check that the file is valid and readable.
+        // Check that the file is valid and readable.
         assert!(total > 0);
 
         let _ = std::fs::remove_file(&path);
