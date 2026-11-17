@@ -1,0 +1,18 @@
+[package]
+name = "melodyn-ui"
+description = "Desktop UI for Melodyn audio pitch correction"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "melodyn-ui"
+path = "src/main.rs"
+
+[dependencies]
+melodyn-core = { workspace = true }
+melodyn-io = { workspace = true }
+eframe = { workspace = true }
+rfd = { workspace = true }
+log = { workspace = true }
+env_logger = { workspace = true }
