@@ -4,6 +4,7 @@
 //! - **wav**: WAV file reading and writing via hound
 
 pub mod audio_buffer;
+pub mod midi;
 pub mod wav;
 
 pub use audio_buffer::{AudioBuffer, SampleFormat};
