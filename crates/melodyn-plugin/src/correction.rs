@@ -206,6 +206,11 @@ impl PitchCorrectionProcessor {
         self.correction_amount
     }
 
+    /// Get the sample rate.
+    pub fn sample_rate(&self) -> f64 {
+        self.sample_rate
+    }
+
     /// Reset internal state.
     pub fn reset(&mut self) {
         self.smoother.reset();
@@ -319,7 +324,7 @@ mod tests {
     #[test]
     fn test_scale_minor() {
         let a_minor = ScaleConstraint::minor(9); // A = 9
-        // A natural minor: A B C D E F G
+                                                 // A natural minor: A B C D E F G
         assert!(a_minor.contains(9)); // A
         assert!(a_minor.contains(11)); // B
         assert!(a_minor.contains(0)); // C
@@ -400,7 +405,10 @@ mod tests {
         // With zero correction amount, shift should be 0.
         for _ in 0..50 {
             let shift = proc.compute_correction(445.0, 0.0);
-            assert!(shift.abs() < 0.01, "Zero correction amount should give ~0 shift");
+            assert!(
+                shift.abs() < 0.01,
+                "Zero correction amount should give ~0 shift"
+            );
         }
     }
 

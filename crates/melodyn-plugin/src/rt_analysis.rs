@@ -141,9 +141,9 @@ impl RingBuffer {
             self.capacity - (to_read - self.write_pos)
         };
 
-        for i in 0..to_read {
+        for (i, out_val) in output.iter_mut().enumerate().take(to_read) {
             let idx = (start + i) % self.capacity;
-            output[i] = self.data[idx];
+            *out_val = self.data[idx];
         }
 
         to_read
@@ -356,11 +356,7 @@ impl RealTimeAnalysisCache {
 
         // Collect voiced estimates with their confidences.
         let mut voiced: Vec<(f64, f64, f64)> = Vec::with_capacity(self.history_count);
-        let start = if self.history_write >= self.history_count {
-            self.history_write - self.history_count
-        } else {
-            0
-        };
+        let start = self.history_write.saturating_sub(self.history_count);
 
         for i in start..self.history_write {
             let idx = i % self.config.history_size;

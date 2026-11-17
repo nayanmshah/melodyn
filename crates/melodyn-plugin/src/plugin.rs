@@ -13,9 +13,10 @@ use crate::rt_analysis::RealTimeAnalysisCache;
 // ---------------------------------------------------------------------------
 
 /// Detection mode for the plugin, controlling analysis behaviour.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum DetectionMode {
     /// Monophonic melodic content (vocals, solo instruments).
+    #[default]
     Melodic,
     /// Polyphonic content (piano, guitar chords).
     Polyphonic,
@@ -56,11 +57,7 @@ impl DetectionMode {
     }
 }
 
-impl Default for DetectionMode {
-    fn default() -> Self {
-        Self::Melodic
-    }
-}
+// Default is derived on the enum via #[default] attribute.
 
 // ---------------------------------------------------------------------------
 // Plugin parameters
@@ -299,8 +296,7 @@ impl MelodynPlugin {
         self.params = params.clamped();
         self.correction
             .set_correction_amount(self.params.pitch_correction_amount);
-        self.correction
-            .set_vibrato_scale(self.params.vibrato_depth);
+        self.correction.set_vibrato_scale(self.params.vibrato_depth);
     }
 
     /// Get the latency in samples.
@@ -457,7 +453,7 @@ pub fn ratio_to_semitones(ratio: f64) -> f64 {
 /// This is a lightweight approximation for real-time use: it applies
 /// a frequency-dependent gain curve that simulates shifting the spectral
 /// envelope without full STFT decomposition.
-fn apply_formant_shift(samples: &mut [f64], _ratio: f64) {
+fn apply_formant_shift(_samples: &mut [f64], _ratio: f64) {
     // In a full implementation, this would decompose the spectral envelope
     // and shift it. For the real-time path, the phase vocoder's formant
     // preservation mode handles most of this. This function handles residual
@@ -470,11 +466,6 @@ fn apply_formant_shift(samples: &mut [f64], _ratio: f64) {
     //
     // This is a placeholder -- the full formant processor in melodyn-synth
     // would be used for offline / higher-quality processing.
-    if samples.is_empty() {
-        return;
-    }
-    // No-op for now; the phase vocoder handles formant preservation.
-    // A production implementation would integrate FormantProcessor from melodyn-synth.
 }
 
 // ---------------------------------------------------------------------------

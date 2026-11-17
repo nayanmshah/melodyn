@@ -49,9 +49,9 @@ pub mod rt_analysis;
 // Re-export ARA types.
 pub use ara::{
     AraArchive, AraAudioModification, AraAudioSource, AraDocument, AraDocumentController,
-    AraMusicalContext, AraPlaybackRegion, AraRegionSequence, ArchiveChunk, BarSignature,
-    ChunkType, KeySignature, KeySignatureEntry, ModelUpdateNotification, NoteEdit, SheetChord,
-    StaticTuning, TempoEntry,
+    AraMusicalContext, AraPlaybackRegion, AraRegionSequence, ArchiveChunk, BarSignature, ChunkType,
+    KeySignature, KeySignatureEntry, ModelUpdateNotification, NoteEdit, SheetChord, StaticTuning,
+    TempoEntry,
 };
 
 // Re-export plugin types.

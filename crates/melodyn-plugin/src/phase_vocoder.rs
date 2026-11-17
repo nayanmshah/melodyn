@@ -233,7 +233,8 @@ impl PhaseVocoder {
         // Apply synthesis window and overlap-add into output buffer.
         let out_len = self.output_buffer.len();
         for i in 0..n {
-            let sample = self.fft_scratch[i].re * inv_norm * self.synthesis_window[i] * self.ola_norm;
+            let sample =
+                self.fft_scratch[i].re * inv_norm * self.synthesis_window[i] * self.ola_norm;
             let out_idx = (self.output_read_pos + i) % out_len;
             self.output_buffer[out_idx] += sample;
         }
@@ -258,8 +259,8 @@ impl PhaseVocoder {
             let wrapped = phase_diff - TWO_PI * (phase_diff / TWO_PI).round();
 
             // Instantaneous frequency for this bin.
-            let inst_freq = (k as f64 + wrapped / (TWO_PI * hop / self.window_size as f64))
-                * freq_per_bin;
+            let inst_freq =
+                (k as f64 + wrapped / (TWO_PI * hop / self.window_size as f64)) * freq_per_bin;
 
             self.magnitude[k] = mag;
             self.frequency[k] = inst_freq;
@@ -333,8 +334,8 @@ impl PhaseVocoder {
             // Convert instantaneous frequency back to phase increment.
             let freq = self.new_frequency[k];
             let bin_deviation = freq / freq_per_bin - k as f64;
-            let phase_inc = self.phase_advance_per_bin * k as f64
-                + TWO_PI * bin_deviation * hop / n as f64;
+            let phase_inc =
+                self.phase_advance_per_bin * k as f64 + TWO_PI * bin_deviation * hop / n as f64;
 
             self.synthesis_phase[k] += phase_inc;
 
@@ -372,12 +373,12 @@ fn hann_window(size: usize) -> Vec<f64> {
 /// A lightweight alternative to cepstral smoothing for real-time use.
 fn spectral_envelope(magnitudes: &[f64], envelope: &mut [f64], half_width: usize) {
     let n = magnitudes.len().min(envelope.len());
-    for k in 0..n {
+    for (k, env_val) in envelope.iter_mut().enumerate().take(n) {
         let start = k.saturating_sub(half_width);
         let end = (k + half_width + 1).min(n);
         let count = end - start;
         let sum: f64 = magnitudes[start..end].iter().sum();
-        envelope[k] = if count > 0 { sum / count as f64 } else { 0.0 };
+        *env_val = if count > 0 { sum / count as f64 } else { 0.0 };
     }
 }
 

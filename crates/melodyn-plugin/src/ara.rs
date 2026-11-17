@@ -252,7 +252,11 @@ impl AraAudioSource {
             return 0;
         }
         let ch = &self.samples[channel];
-        let available = if start < ch.len() { ch.len() - start } else { 0 };
+        let available = if start < ch.len() {
+            ch.len() - start
+        } else {
+            0
+        };
         let count = available.min(buf.len());
         buf[..count].copy_from_slice(&ch[start..start + count]);
         count
@@ -952,11 +956,7 @@ impl AraDocument {
                 data.extend_from_slice(&te.position_quarters.to_le_bytes());
                 data.extend_from_slice(&te.bpm.to_le_bytes());
             }
-            archive.add_chunk(
-                ChunkType::MusicalContext,
-                format!("ctx-{}", ctx.id),
-                data,
-            );
+            archive.add_chunk(ChunkType::MusicalContext, format!("ctx-{}", ctx.id), data);
         }
         archive
     }
@@ -1022,12 +1022,7 @@ impl AraDocumentController {
     }
 
     /// Supply sample data for an audio source.
-    pub fn update_audio_source_samples(
-        &mut self,
-        id: AraId,
-        channel: usize,
-        samples: &[f64],
-    ) {
+    pub fn update_audio_source_samples(&mut self, id: AraId, channel: usize, samples: &[f64]) {
         if let Some(source) = self.document.audio_sources.get_mut(&id) {
             source.push_samples(channel, samples);
             self.document
@@ -1050,7 +1045,9 @@ impl AraDocumentController {
             source.analysis_pending = true;
         }
         self.document
-            .notify(ModelUpdateNotification::AudioSourceAnalysisStarted(source_id));
+            .notify(ModelUpdateNotification::AudioSourceAnalysisStarted(
+                source_id,
+            ));
 
         let result = if !mono.is_empty() {
             let mut config = self.analysis_config.clone();
@@ -1066,7 +1063,9 @@ impl AraDocumentController {
             source.analysis_pending = false;
         }
         self.document
-            .notify(ModelUpdateNotification::AudioSourceAnalysisCompleted(source_id));
+            .notify(ModelUpdateNotification::AudioSourceAnalysisCompleted(
+                source_id,
+            ));
     }
 
     /// Create a modification for a source.
@@ -1180,14 +1179,17 @@ mod tests {
         assert!(modif.has_pitch_edit());
         assert_eq!(modif.pitch_shift_for(0), 2.0);
 
-        modif.note_edits.insert(0, NoteEdit {
-            note_index: 0,
-            pitch_shift: 1.0,
-            time_stretch: 1.5,
-            formant_shift: 0.0,
-            gain: 1.0,
-            new_start: None,
-        });
+        modif.note_edits.insert(
+            0,
+            NoteEdit {
+                note_index: 0,
+                pitch_shift: 1.0,
+                time_stretch: 1.5,
+                formant_shift: 0.0,
+                gain: 1.0,
+                new_start: None,
+            },
+        );
         assert_eq!(modif.pitch_shift_for(0), 3.0); // global + local
         assert!((modif.time_stretch_for(0) - 1.5).abs() < 1e-6);
     }
@@ -1222,8 +1224,14 @@ mod tests {
     fn test_musical_context_tempo_change() {
         let mut ctx = AraMusicalContext::new(1, "test".to_string());
         ctx.tempo_entries = vec![
-            TempoEntry { position_quarters: 0.0, bpm: 120.0 },
-            TempoEntry { position_quarters: 4.0, bpm: 60.0 },
+            TempoEntry {
+                position_quarters: 0.0,
+                bpm: 120.0,
+            },
+            TempoEntry {
+                position_quarters: 4.0,
+                bpm: 60.0,
+            },
         ];
         // First 4 quarters at 120 BPM = 2 seconds
         assert!((ctx.quarters_to_seconds(4.0) - 2.0).abs() < 1e-10);
@@ -1255,9 +1263,15 @@ mod tests {
         let r1 = doc.create_playback_region(mod_id);
         let r2 = doc.create_playback_region(mod_id);
         doc.playback_regions.get_mut(&r1).unwrap().start_in_playback = 0.0;
-        doc.playback_regions.get_mut(&r1).unwrap().duration_in_playback = 2.0;
+        doc.playback_regions
+            .get_mut(&r1)
+            .unwrap()
+            .duration_in_playback = 2.0;
         doc.playback_regions.get_mut(&r2).unwrap().start_in_playback = 1.5;
-        doc.playback_regions.get_mut(&r2).unwrap().duration_in_playback = 2.0;
+        doc.playback_regions
+            .get_mut(&r2)
+            .unwrap()
+            .duration_in_playback = 2.0;
 
         assert_eq!(doc.regions_at_time(0.5).len(), 1);
         assert_eq!(doc.regions_at_time(1.5).len(), 2); // Overlapping
@@ -1268,8 +1282,14 @@ mod tests {
     #[test]
     fn test_content_reader_tempo() {
         let entries = vec![
-            TempoEntry { position_quarters: 0.0, bpm: 120.0 },
-            TempoEntry { position_quarters: 4.0, bpm: 90.0 },
+            TempoEntry {
+                position_quarters: 0.0,
+                bpm: 120.0,
+            },
+            TempoEntry {
+                position_quarters: 4.0,
+                bpm: 90.0,
+            },
         ];
         let mut reader = TempoEntriesContentReader::new(&entries);
         assert_eq!(reader.count(), 2);
