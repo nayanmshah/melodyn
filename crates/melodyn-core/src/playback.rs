@@ -264,15 +264,13 @@ impl PlaybackEngine {
         let mut read_pos = pos;
 
         // Handle looping
-        if loop_enabled && loop_end > loop_start {
-            if read_pos >= loop_end {
-                let loop_len = loop_end - loop_start;
-                read_pos = loop_start + (read_pos - loop_start) % loop_len;
-                // Update the atomic position so the UI cursor stays in sync
-                self.output
-                    .state
-                    .set_position(read_pos as u64);
-            }
+        if loop_enabled && loop_end > loop_start && read_pos >= loop_end {
+            let loop_len = loop_end - loop_start;
+            read_pos = loop_start + (read_pos - loop_start) % loop_len;
+            // Update the atomic position so the UI cursor stays in sync
+            self.output
+                .state
+                .set_position(read_pos as u64);
         }
 
         // Check if we've reached the end

@@ -249,7 +249,7 @@ pub fn track_list_panel(
                     .fill(bg)
                     .inner_margin(egui::Margin::same(4.0))
                     .stroke(if is_active {
-                        Stroke::new(1.0, track_color)
+                        Stroke::new(1.0_f32, track_color)
                     } else {
                         Stroke::NONE
                     });
@@ -345,14 +345,13 @@ pub fn track_list_panel(
                                 ui.with_layout(
                                     egui::Layout::right_to_left(egui::Align::Center),
                                     |ui| {
-                                        if num_tracks > 1 {
-                                            if ui
+                                        if num_tracks > 1
+                                            && ui
                                                 .small_button("x")
                                                 .on_hover_text("Remove track")
                                                 .clicked()
-                                            {
-                                                track_state.confirm_remove = Some(i);
-                                            }
+                                        {
+                                            track_state.confirm_remove = Some(i);
                                         }
                                     },
                                 );
@@ -372,7 +371,7 @@ pub fn track_list_panel(
             .resizable(false)
             .show(ui.ctx(), |ui| {
                 ui.horizontal_wrapped(|ui| {
-                    for (_ci, &(r, g, b)) in TRACK_COLORS.iter().enumerate() {
+                    for &(r, g, b) in TRACK_COLORS.iter() {
                         let color = Color32::from_rgb(
                             (r * 255.0) as u8,
                             (g * 255.0) as u8,
@@ -389,7 +388,7 @@ pub fn track_list_panel(
                             painter.rect_stroke(
                                 resp.rect,
                                 3.0,
-                                Stroke::new(2.0, Color32::WHITE),
+                                Stroke::new(2.0_f32, Color32::WHITE),
                             );
                         }
                         if resp.clicked() {

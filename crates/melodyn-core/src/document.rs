@@ -70,21 +70,12 @@ impl Default for TimeSignature {
 }
 
 /// Key signature for the composition.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub struct Key {
     /// Root note (0=C, 1=C#, ..., 11=B).
     pub root: u8,
     /// Whether the key is minor (false = major).
     pub minor: bool,
-}
-
-impl Default for Key {
-    fn default() -> Self {
-        Self {
-            root: 0,
-            minor: false,
-        }
-    }
 }
 
 /// Tempo change at a specific position.

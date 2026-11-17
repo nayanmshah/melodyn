@@ -221,11 +221,7 @@ pub fn read_audio_file<P: AsRef<Path>>(path: P) -> Result<AudioBuffer, FormatErr
         }
     }
 
-    let num_samples_per_channel = if num_channels > 0 {
-        all_samples.len() / num_channels
-    } else {
-        0
-    };
+    let num_samples_per_channel = all_samples.len().checked_div(num_channels).unwrap_or(0);
 
     if num_samples_per_channel == 0 {
         return Ok(AudioBuffer::new(

@@ -476,7 +476,7 @@ impl PitchDetector {
         let mut notes = Vec::new();
         let mut current_note: Option<NoteAccumulator> = None;
 
-        for (_i, pitch) in frame_pitches.iter().enumerate() {
+        for pitch in frame_pitches.iter() {
             match (pitch, &mut current_note) {
                 (Some(p), Some(acc)) => {
                     // Check if this continues the current note (within ~1 semitone)
@@ -519,7 +519,7 @@ impl PitchDetector {
         let mut active_tracks: Vec<NoteAccumulator> = Vec::new();
         let mut finished_notes: Vec<DetectedNote> = Vec::new();
 
-        for (_frame_idx, candidates) in frame_candidates.iter().enumerate() {
+        for candidates in frame_candidates.iter() {
             let mut matched = vec![false; candidates.len()];
             let mut track_matched = vec![false; active_tracks.len()];
 

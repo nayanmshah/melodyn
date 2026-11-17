@@ -164,9 +164,9 @@ impl AudioRingBuffer {
         let to_read = output.len().min(available);
         let r = self.read_pos.load(Ordering::Relaxed);
 
-        for i in 0..to_read {
+        for (i, out_val) in output.iter_mut().enumerate().take(to_read) {
             let idx = (r + i) & (self.capacity - 1);
-            output[i] = self.buffer[idx];
+            *out_val = self.buffer[idx];
         }
 
         self.read_pos
