@@ -41,7 +41,7 @@ pub fn timeline_ruler(ui: &mut egui::Ui, state: &AppState) {
             Pos2::new(rect.left(), rect.bottom()),
             Pos2::new(rect.right(), rect.bottom()),
         ],
-        Stroke::new(1.0, Color32::from_rgb(60, 60, 70)),
+        Stroke::new(1.0_f32, Color32::from_rgb(60, 60, 70)),
     );
 
     // Skip piano-width area on the left to align with editor
@@ -66,7 +66,7 @@ pub fn timeline_ruler(ui: &mut egui::Ui, state: &AppState) {
                 Pos2::new(cursor_x, rect.top()),
                 Pos2::new(cursor_x, rect.bottom()),
             ],
-            Stroke::new(1.5, CURSOR_COLOR),
+            Stroke::new(1.5_f32, CURSOR_COLOR),
         );
         // Small triangle
         let tri = 4.0;
@@ -130,7 +130,7 @@ fn draw_time_ruler(painter: &egui::Painter, rect: Rect, state: &AppState) {
                 // Major tick line
                 painter.line_segment(
                     [Pos2::new(x, rect.bottom() - 10.0), Pos2::new(x, rect.bottom())],
-                    Stroke::new(1.0, MAJOR_TICK),
+                    Stroke::new(1.0_f32, MAJOR_TICK),
                 );
 
                 // Label
@@ -155,7 +155,7 @@ fn draw_time_ruler(painter: &egui::Painter, rect: Rect, state: &AppState) {
             if x >= rect.left() && x <= rect.right() {
                 painter.line_segment(
                     [Pos2::new(x, rect.bottom() - 5.0), Pos2::new(x, rect.bottom())],
-                    Stroke::new(0.5, TICK_COLOR),
+                    Stroke::new(0.5_f32, TICK_COLOR),
                 );
             }
         }
@@ -184,7 +184,7 @@ fn draw_beat_ruler(painter: &egui::Painter, rect: Rect, state: &AppState) {
             // Major tick + bar number
             painter.line_segment(
                 [Pos2::new(x, rect.bottom() - 12.0), Pos2::new(x, rect.bottom())],
-                Stroke::new(1.0, MAJOR_TICK),
+                Stroke::new(1.0_f32, MAJOR_TICK),
             );
 
             let label = format!("{}", beat.bar + 1);
@@ -199,7 +199,7 @@ fn draw_beat_ruler(painter: &egui::Painter, rect: Rect, state: &AppState) {
             // Minor tick + beat number
             painter.line_segment(
                 [Pos2::new(x, rect.bottom() - 6.0), Pos2::new(x, rect.bottom())],
-                Stroke::new(0.5, TICK_COLOR),
+                Stroke::new(0.5_f32, TICK_COLOR),
             );
 
             // Show beat number if zoomed in enough

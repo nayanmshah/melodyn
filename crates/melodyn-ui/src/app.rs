@@ -401,7 +401,7 @@ fn open_file(state: &mut AppState, path: &str) {
     let waveform_peaks = compute_waveform_peaks(&mono, 4000);
 
     // Compute initial view range from notes
-    let (pitch_min, pitch_max) = if notes.is_empty() {
+    let (pitch_min, _pitch_max) = if notes.is_empty() {
         (48.0, 84.0)
     } else {
         let min = notes

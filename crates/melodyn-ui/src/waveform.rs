@@ -54,7 +54,7 @@ pub fn waveform_overview(ui: &mut egui::Ui, state: &mut AppState) {
     let y_center = rect.center().y;
     painter.line_segment(
         [Pos2::new(rect.left(), y_center), Pos2::new(rect.right(), y_center)],
-        Stroke::new(0.5, ZERO_LINE),
+        Stroke::new(0.5_f32, ZERO_LINE),
     );
 
     // Draw waveform peaks
@@ -95,14 +95,14 @@ pub fn waveform_overview(ui: &mut egui::Ui, state: &mut AppState) {
         Pos2::new(region_x_end.min(rect.right()), rect.bottom()),
     );
     painter.rect_filled(region_rect, 0.0, REGION_FILL);
-    painter.rect_stroke(region_rect, 0.0, Stroke::new(1.0, REGION_BORDER));
+    painter.rect_stroke(region_rect, 0.0, Stroke::new(1.0_f32, REGION_BORDER));
 
     // Playback cursor
     let cursor_x = time_to_overview_x(state.playback_position, rect, state.duration);
     if cursor_x >= rect.left() && cursor_x <= rect.right() {
         painter.line_segment(
             [Pos2::new(cursor_x, rect.top()), Pos2::new(cursor_x, rect.bottom())],
-            Stroke::new(1.5, CURSOR_COLOR),
+            Stroke::new(1.5_f32, CURSOR_COLOR),
         );
     }
 

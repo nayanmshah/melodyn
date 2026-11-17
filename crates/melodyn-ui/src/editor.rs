@@ -67,6 +67,7 @@ fn midi_to_y(midi: f64, rect: Rect, state: &AppState) -> f32 {
 }
 
 /// Convert screen Y coordinate to MIDI note number.
+#[allow(dead_code)]
 fn y_to_midi(y: f32, rect: Rect, state: &AppState) -> f64 {
     state.pitch_offset + (rect.bottom() - y) as f64 / state.pitch_scale
 }
@@ -134,7 +135,7 @@ fn draw_piano_keyboard(painter: &egui::Painter, rect: Rect, state: &AppState) {
         painter.rect_filled(key_rect, 0.0, fill);
         painter.line_segment(
             [Pos2::new(rect.left(), y_bot), Pos2::new(rect.right(), y_bot)],
-            Stroke::new(0.5, PIANO_LINE),
+            Stroke::new(0.5_f32, PIANO_LINE),
         );
 
         // Label C notes
@@ -186,9 +187,9 @@ fn draw_grid(painter: &egui::Painter, rect: Rect, state: &AppState) {
         }
         // C notes get a brighter line
         let stroke = if pc == 0 {
-            Stroke::new(1.0, BEAT_LINE)
+            Stroke::new(1.0_f32, BEAT_LINE)
         } else {
-            Stroke::new(0.5, GRID_LINE)
+            Stroke::new(0.5_f32, GRID_LINE)
         };
         painter.line_segment(
             [Pos2::new(rect.left(), y), Pos2::new(rect.right(), y)],
@@ -204,9 +205,9 @@ fn draw_grid(painter: &egui::Painter, rect: Rect, state: &AppState) {
                 continue;
             }
             let stroke = if beat.is_downbeat {
-                Stroke::new(1.0, DOWNBEAT_LINE)
+                Stroke::new(1.0_f32, DOWNBEAT_LINE)
             } else {
-                Stroke::new(0.5, BEAT_LINE)
+                Stroke::new(0.5_f32, BEAT_LINE)
             };
             painter.line_segment(
                 [Pos2::new(x, rect.top()), Pos2::new(x, rect.bottom())],
@@ -225,7 +226,7 @@ fn draw_grid(painter: &egui::Painter, rect: Rect, state: &AppState) {
                 let x = time_to_x(t, rect, state);
                 painter.line_segment(
                     [Pos2::new(x, rect.top()), Pos2::new(x, rect.bottom())],
-                    Stroke::new(0.5, GRID_LINE),
+                    Stroke::new(0.5_f32, GRID_LINE),
                 );
             }
             t += interval;
@@ -279,7 +280,7 @@ fn draw_notes(painter: &egui::Painter, rect: Rect, state: &AppState) {
 
         // Selected outline
         if is_selected {
-            painter.rect_stroke(nr, 3.0, Stroke::new(1.5, NOTE_OUTLINE_SELECTED));
+            painter.rect_stroke(nr, 3.0, Stroke::new(1.5_f32, NOTE_OUTLINE_SELECTED));
         }
 
         // Draw pitch contour line inside the note
@@ -305,7 +306,7 @@ fn draw_notes(painter: &egui::Painter, rect: Rect, state: &AppState) {
 
                 painter.line_segment(
                     [Pos2::new(x1, y1c), Pos2::new(x2, y2c)],
-                    Stroke::new(1.2, CONTOUR_COLOR),
+                    Stroke::new(1.2_f32, CONTOUR_COLOR),
                 );
             }
         }
@@ -315,7 +316,7 @@ fn draw_notes(painter: &egui::Painter, rect: Rect, state: &AppState) {
         if y_center >= nr.top() && y_center <= nr.bottom() {
             painter.line_segment(
                 [Pos2::new(nr.left() + 2.0, y_center), Pos2::new(nr.right() - 2.0, y_center)],
-                Stroke::new(0.5, Color32::from_rgba_premultiplied(255, 255, 255, 60)),
+                Stroke::new(0.5_f32, Color32::from_rgba_premultiplied(255, 255, 255, 60)),
             );
         }
     }
@@ -327,7 +328,7 @@ fn draw_playback_cursor(painter: &egui::Painter, rect: Rect, state: &AppState) {
     if x >= rect.left() && x <= rect.right() {
         painter.line_segment(
             [Pos2::new(x, rect.top()), Pos2::new(x, rect.bottom())],
-            Stroke::new(1.5, CURSOR_COLOR),
+            Stroke::new(1.5_f32, CURSOR_COLOR),
         );
         // Small triangle at top
         let tri_size = 5.0;

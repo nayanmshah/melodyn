@@ -482,20 +482,15 @@ pub fn spectral_subtraction(audio: &[f64], config: &SpectralSubtractionConfig) -
         });
     }
 
-    // Reconstruct residual from remaining magnitude + original phase
-    let mut residual_stft = vec![Complex::new(0.0, 0.0); num_frames * n];
-    for t in 0..num_frames {
-        for k in 0..num_bins {
-            let orig = stft[t * n + k];
-            let orig_mag = orig.norm();
-            let phase = if orig_mag > 1e-30 { orig / orig_mag } else { Complex::new(1.0, 0.0) };
-            residual_stft[t * n + k] = phase * residual_mag[t][k];
-            if k > 0 && k < num_bins - 1 {
-                residual_stft[t * n + (n - k)] = residual_stft[t * n + k].conj();
-            }
+    // Compute residual as original minus sum of extracted sources (time domain).
+    // This avoids magnitude+phase reconstruction artifacts.
+    let mut residual = audio.to_vec();
+    for source in &sources {
+        let src_len = source.signal.len().min(residual.len());
+        for i in 0..src_len {
+            residual[i] -= source.signal[i];
         }
     }
-    let residual = inverse_stft(&residual_stft, n, hop, num_frames, audio.len(), config.window_type);
 
     SpectralSubtractionResult { sources, residual }
 }
