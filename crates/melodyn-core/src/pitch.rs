@@ -841,13 +841,20 @@ mod tests {
     }
 
     #[test]
-    fn test_hps_pure_tone() {
+    fn test_hps_harmonic_tone() {
         let sr = 44100.0;
         let freq = 440.0;
         let fft_size = 4096;
-        let audio = sine_wave(freq, sr, fft_size);
+        // HPS needs harmonics — pure sine has no overtones so the product zeroes out.
+        let mut audio = sine_wave(freq, sr, fft_size);
+        for h in 2..=5 {
+            let harmonic = sine_wave(freq * h as f64, sr, fft_size);
+            let amp = 1.0 / h as f64;
+            for (s, &h_s) in audio.iter_mut().zip(harmonic.iter()) {
+                *s += h_s * amp;
+            }
+        }
 
-        // Compute magnitude spectrum
         use crate::fft::{FftEngine, WindowType};
         let engine = FftEngine::new(fft_size, WindowType::Hann);
         let spectrum = engine.forward(&audio);
