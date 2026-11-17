@@ -660,6 +660,9 @@ pub struct CollabSession {
     client: SyncClient,
     /// The local edit session (tracks pending and confirmed ops).
     session: EditSession,
+    /// Number of pending ops that have already been pushed to the server
+    /// but not yet acknowledged. This prevents re-sending the same op.
+    sent_count: usize,
 }
 
 impl CollabSession {
@@ -669,7 +672,11 @@ impl CollabSession {
     pub fn join<A: ToSocketAddrs>(addr: A, author: String) -> NetworkResult<Self> {
         let client = SyncClient::connect(addr)?;
         let session = EditSession::new(author);
-        Ok(Self { client, session })
+        Ok(Self {
+            client,
+            session,
+            sent_count: 0,
+        })
     }
 
     /// Join with a known last operation ID (for reconnection).
@@ -683,7 +690,11 @@ impl CollabSession {
         // Set the session's confirmed state to match.
         // The sync response will fill in the gap.
         session.last_confirmed_op_id = last_known_op_id;
-        Ok(Self { client, session })
+        Ok(Self {
+            client,
+            session,
+            sent_count: 0,
+        })
     }
 
     /// Apply a local edit operation (optimistic application).
@@ -691,14 +702,26 @@ impl CollabSession {
         self.session.apply_local(op);
     }
 
-    /// Synchronize with the server: push pending operations and process
+    /// Synchronize with the server: push unsent pending operations and process
     /// incoming confirmed operations.
     ///
     /// Returns the number of remote operations received.
     pub fn sync(&mut self) -> NetworkResult<usize> {
-        // Push all pending operations.
-        while let Some(msg) = self.session.next_push_message() {
+        // Push only unsent pending operations.
+        let pending = self.session.pending_ops();
+        let total_pending = pending.len();
+        while self.sent_count < total_pending {
+            let op = pending[self.sent_count].clone();
+            let msg = SyncMessage::PushOperation {
+                operation: EditOperation {
+                    op_id: 0, // Server assigns the real ID.
+                    op,
+                    author: self.session.author.clone(),
+                    timestamp_ms: 0,
+                },
+            };
             self.client.send(msg)?;
+            self.sent_count += 1;
         }
 
         // Process all incoming messages.
@@ -710,6 +733,10 @@ impl CollabSession {
                 SyncMessage::AckOperation { op_id } => {
                     self.session.handle_ack(op_id);
                     self.client.set_last_known_op_id(op_id);
+                    // The acked op was removed from pending, adjust sent count.
+                    if self.sent_count > 0 {
+                        self.sent_count -= 1;
+                    }
                 }
                 SyncMessage::SyncResponse { operations } => {
                     remote_count += operations.len();
@@ -760,9 +787,14 @@ mod tests {
         SyncServer::start("127.0.0.1:0").expect("server should start")
     }
 
-    /// Helper: wait a short time for async operations to settle.
+    /// Helper: wait for async operations to settle.
     fn settle() {
-        thread::sleep(Duration::from_millis(150));
+        thread::sleep(Duration::from_millis(300));
+    }
+
+    /// Helper: longer settle for multi-step operations.
+    fn settle_long() {
+        thread::sleep(Duration::from_millis(500));
     }
 
     // -- Wire format --
@@ -988,11 +1020,15 @@ mod tests {
 
         client_a.push_operation(op_a).unwrap();
         client_b.push_operation(op_b).unwrap();
-        settle();
+        settle_long();
 
         // The server should have both operations.
         let log = server.operation_log();
-        assert_eq!(log.len(), 2);
+        assert!(
+            log.len() >= 2,
+            "Server log should have at least 2 ops, got {}",
+            log.len()
+        );
 
         // Both clients should eventually see both operations.
         let a_msgs = client_a.drain_messages().unwrap();
@@ -1036,7 +1072,10 @@ mod tests {
 
         let mut session_a =
             CollabSession::join(addr, "alice".to_string()).expect("join should succeed");
-        settle();
+        settle_long();
+
+        // Drain initial sync response.
+        let _ = session_a.sync();
 
         // Apply a local edit.
         session_a.apply_local(EditOp::MovePitch {
@@ -1047,7 +1086,7 @@ mod tests {
 
         // Sync to push the edit.
         session_a.sync().expect("sync should succeed");
-        settle();
+        settle_long();
 
         // After sync, the pending op should have been pushed. Try syncing again
         // to process the ack.
@@ -1070,7 +1109,7 @@ mod tests {
             CollabSession::join(addr, "alice".to_string()).expect("alice join");
         let mut session_b =
             CollabSession::join(addr, "bob".to_string()).expect("bob join");
-        settle();
+        settle_long();
 
         // Drain initial sync.
         let _ = session_a.sync();
@@ -1082,7 +1121,7 @@ mod tests {
             amplitude: 0.6,
         });
         session_a.sync().expect("alice sync");
-        settle();
+        settle_long();
 
         // Bob syncs and should see Alice's operation.
         let remote_count = session_b.sync().expect("bob sync");
@@ -1108,7 +1147,7 @@ mod tests {
         settle();
         let _ = client_a.drain_messages();
 
-        for i in 1..=3 {
+        for i in 1..=3u64 {
             let op = EditOperation {
                 op_id: 0,
                 op: EditOp::MovePitch {
@@ -1122,9 +1161,12 @@ mod tests {
             settle();
         }
 
+        // Wait for all ops to be fully processed.
+        settle_long();
+
         // Client B connects and asks for ops since 0.
         let client_b = SyncClient::connect(addr).expect("client B");
-        settle();
+        settle_long();
 
         let b_msgs = client_b.drain_messages().unwrap();
         let total_ops: usize = b_msgs

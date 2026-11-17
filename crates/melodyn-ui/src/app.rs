@@ -17,7 +17,9 @@ use melodyn_core::scale::{detect_key, distribution_from_notes};
 use melodyn_core::tempo::BeatGrid;
 use melodyn_io::{AudioBuffer, read_wav, write_wav, WavWriteConfig};
 
+use crate::clipboard::Clipboard;
 use crate::tools::{SnapMode, Tool};
+use crate::tracks::TrackListState;
 
 // ---------------------------------------------------------------------------
 // Editable note
@@ -211,6 +213,15 @@ pub struct AppState {
     pub undo_stack: Vec<UndoSnapshot>,
     pub redo_stack: Vec<UndoSnapshot>,
 
+    // -- Clipboard --
+    pub clipboard: Clipboard,
+
+    // -- Multi-track --
+    pub track_list: TrackListState,
+
+    // -- Drag-and-drop --
+    pub drop_hover: bool,
+
     // -- Status --
     pub status_message: String,
     pub modified: bool,
@@ -257,6 +268,12 @@ impl Default for AppState {
 
             undo_stack: Vec::new(),
             redo_stack: Vec::new(),
+
+            clipboard: Clipboard::new(),
+
+            track_list: TrackListState::default(),
+
+            drop_hover: false,
 
             status_message: "Ready -- open a WAV file to begin".to_string(),
             modified: false,
@@ -794,10 +811,19 @@ impl MelodynApp {
         let mut do_undo = false;
         let mut do_redo = false;
         let mut do_select_all = false;
+        let mut do_deselect_all = false;
         let mut do_delete = false;
         let mut do_home = false;
         let mut do_zoom_in = false;
         let mut do_zoom_out = false;
+        let mut do_copy = false;
+        let mut do_cut = false;
+        let mut do_paste = false;
+        let mut do_duplicate = false;
+        let mut do_escape = false;
+        let mut do_fit_view = false;
+        let mut nudge_pitch: f64 = 0.0;
+        let mut nudge_time: f64 = 0.0;
 
         ctx.input(|i| {
             // Space: toggle play
@@ -819,13 +845,43 @@ impl MelodynApp {
             }
 
             // Ctrl+A: select all
-            if i.modifiers.command && i.key_pressed(egui::Key::A) {
+            if i.modifiers.command && !i.modifiers.shift && i.key_pressed(egui::Key::A) {
                 do_select_all = true;
+            }
+
+            // Ctrl+Shift+A: deselect all
+            if i.modifiers.command && i.modifiers.shift && i.key_pressed(egui::Key::A) {
+                do_deselect_all = true;
+            }
+
+            // Ctrl+C: copy
+            if i.modifiers.command && i.key_pressed(egui::Key::C) {
+                do_copy = true;
+            }
+
+            // Ctrl+X: cut
+            if i.modifiers.command && i.key_pressed(egui::Key::X) {
+                do_cut = true;
+            }
+
+            // Ctrl+V: paste
+            if i.modifiers.command && i.key_pressed(egui::Key::V) {
+                do_paste = true;
+            }
+
+            // Ctrl+D: duplicate
+            if i.modifiers.command && i.key_pressed(egui::Key::D) {
+                do_duplicate = true;
             }
 
             // Delete/Backspace: delete selected
             if i.key_pressed(egui::Key::Delete) || i.key_pressed(egui::Key::Backspace) {
                 do_delete = true;
+            }
+
+            // Escape: deselect all / cancel
+            if i.key_pressed(egui::Key::Escape) {
+                do_escape = true;
             }
 
             // Home: go to start
@@ -839,6 +895,34 @@ impl MelodynApp {
             }
             if i.modifiers.command && i.key_pressed(egui::Key::Minus) {
                 do_zoom_out = true;
+            }
+
+            // +/- keys (without Ctrl): zoom in/out
+            if !i.modifiers.command && i.key_pressed(egui::Key::Equals) {
+                do_zoom_in = true;
+            }
+            if !i.modifiers.command && i.key_pressed(egui::Key::Minus) {
+                do_zoom_out = true;
+            }
+
+            // F key: fit view to show all notes
+            if i.key_pressed(egui::Key::F) && !i.modifiers.command {
+                do_fit_view = true;
+            }
+
+            // Arrow keys: nudge selected notes
+            let big_step = i.modifiers.shift;
+            if i.key_pressed(egui::Key::ArrowUp) && !i.modifiers.command {
+                nudge_pitch = if big_step { 12.0 } else { 1.0 };
+            }
+            if i.key_pressed(egui::Key::ArrowDown) && !i.modifiers.command {
+                nudge_pitch = if big_step { -12.0 } else { -1.0 };
+            }
+            if i.key_pressed(egui::Key::ArrowRight) && !i.modifiers.command {
+                nudge_time = if big_step { 0.1 } else { 0.01 };
+            }
+            if i.key_pressed(egui::Key::ArrowLeft) && !i.modifiers.command {
+                nudge_time = if big_step { -0.1 } else { -0.01 };
             }
         });
 
@@ -874,6 +958,10 @@ impl MelodynApp {
         if do_select_all {
             self.state.select_all();
         }
+        if do_deselect_all || do_escape {
+            self.state.selected_notes.clear();
+            self.state.status_message = "Deselected all".to_string();
+        }
         if do_delete {
             self.state.delete_selected();
         }
@@ -889,6 +977,52 @@ impl MelodynApp {
         }
         if do_zoom_out {
             self.state.time_scale = (self.state.time_scale / 1.25).max(20.0);
+        }
+
+        // Clipboard operations
+        if do_copy {
+            let mut clipboard = self.state.clipboard.clone();
+            crate::clipboard::copy_selected(&self.state, &mut clipboard);
+            let count = clipboard.len();
+            self.state.clipboard = clipboard;
+            if count > 0 {
+                self.state.status_message = format!(
+                    "Copied {} note{}",
+                    count,
+                    if count > 1 { "s" } else { "" }
+                );
+            }
+        }
+        if do_cut {
+            let mut clipboard = self.state.clipboard.clone();
+            crate::clipboard::cut_selected(&mut self.state, &mut clipboard);
+            self.state.clipboard = clipboard;
+        }
+        if do_paste {
+            let clipboard = self.state.clipboard.clone();
+            crate::clipboard::paste_at_cursor(&mut self.state, &clipboard);
+        }
+        if do_duplicate {
+            crate::clipboard::duplicate_selected(&mut self.state);
+        }
+
+        // Arrow key nudging
+        if (nudge_pitch.abs() > 0.001 || nudge_time.abs() > 0.001)
+            && !self.state.selected_notes.is_empty()
+        {
+            self.state.push_undo("Nudge Notes");
+            let selected: Vec<usize> = self.state.selected_notes.iter().copied().collect();
+            for idx in selected {
+                if idx < self.state.notes.len() {
+                    self.state.notes[idx].pitch_offset += nudge_pitch;
+                    self.state.notes[idx].time_offset += nudge_time;
+                }
+            }
+        }
+
+        // Fit view
+        if do_fit_view {
+            fit_view_to_notes(&mut self.state);
         }
     }
 }

@@ -35,10 +35,12 @@
 //! ```
 
 pub mod app;
+pub mod clipboard;
 pub mod editor;
 pub mod inspector;
 pub mod timeline;
 pub mod tools;
+pub mod tracks;
 pub mod transport;
 pub mod waveform;
 
