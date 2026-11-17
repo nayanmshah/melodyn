@@ -487,8 +487,7 @@ impl PitchDetector {
                     } else {
                         // New note -- finish the old one
                         notes.push(acc.to_note(hop_size, sr));
-                        let mut new_acc = NoteAccumulator::new(p);
-                        current_note = Some(new_acc);
+                        current_note = Some(NoteAccumulator::new(p));
                     }
                 }
                 (Some(p), None) => {
