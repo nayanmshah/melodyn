@@ -1,0 +1,12 @@
+[package]
+name = "melodyn-plugin"
+description = "Plugin interface skeleton for Melodyn: future ARA/VST3 integration"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+melodyn-core = { workspace = true }
+melodyn-synth = { workspace = true }
+thiserror = { workspace = true }
+log = { workspace = true }

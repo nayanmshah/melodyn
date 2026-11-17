@@ -1,0 +1,17 @@
+[package]
+name = "melodyn-core"
+description = "Core DSP engine for Melodyn: FFT, spectral analysis, pitch detection, energy claims"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+rustfft = { workspace = true }
+num-complex = { workspace = true }
+num-traits = { workspace = true }
+rayon = { workspace = true }
+thiserror = { workspace = true }
+log = { workspace = true }
+
+[dev-dependencies]
+env_logger = { workspace = true }

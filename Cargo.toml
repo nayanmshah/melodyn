@@ -1,0 +1,30 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/melodyn-core",
+    "crates/melodyn-synth",
+    "crates/melodyn-io",
+    "crates/melodyn-plugin",
+    "crates/melodyn-cli",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/user/melodyn"
+
+[workspace.dependencies]
+melodyn-core = { path = "crates/melodyn-core" }
+melodyn-synth = { path = "crates/melodyn-synth" }
+melodyn-io = { path = "crates/melodyn-io" }
+melodyn-plugin = { path = "crates/melodyn-plugin" }
+rustfft = "6.2"
+num-complex = "0.4"
+num-traits = "0.2"
+rayon = "1.10"
+hound = "3.5"
+clap = { version = "4.5", features = ["derive"] }
+thiserror = "2.0"
+log = "0.4"
+env_logger = "0.11"

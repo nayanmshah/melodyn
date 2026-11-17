@@ -1,0 +1,14 @@
+[package]
+name = "melodyn-cli"
+description = "Command-line tool for Melodyn: load audio, analyze, detect pitches"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+melodyn-core = { workspace = true }
+melodyn-synth = { workspace = true }
+melodyn-io = { path = "../melodyn-io" }
+clap = { workspace = true }
+env_logger = { workspace = true }
+log = { workspace = true }
