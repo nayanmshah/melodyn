@@ -85,9 +85,11 @@ pub fn estimate_tdoa(signal1: &[f64], signal2: &[f64], config: &TdoaConfig) -> T
     engine.forward_complex_inplace(&mut buf2);
 
     // Cross-power spectrum with phase transform (PHAT weighting)
+    // Convention: conj(X1) * X2 so that a positive peak at lag D means
+    // signal2 is delayed by D samples relative to signal1.
     let mut cross_spectrum = vec![Complex::new(0.0, 0.0); n];
     for k in 0..n {
-        let cross = buf1[k] * buf2[k].conj();
+        let cross = buf1[k].conj() * buf2[k];
         let mag = cross.norm();
         if mag > 1e-30 {
             // PHAT: normalize by magnitude -> phase-only

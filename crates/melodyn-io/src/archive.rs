@@ -1107,10 +1107,11 @@ mod tests {
         archive.set_i32("val", 100);
         let mut bytes = archive.to_bytes().unwrap();
 
-        // Corrupt a byte in the payload (somewhere after the header).
-        if bytes.len() > 20 {
-            bytes[18] ^= 0xFF;
-        }
+        // Layout: header(12) + chunk_type(4) + payload_len(4) + payload(12) + crc(4) = 36
+        // Corrupt a byte inside the payload data (offset 20 is first payload byte).
+        // This changes the data without affecting the length, so the CRC check will fail.
+        assert!(bytes.len() >= 32);
+        bytes[25] ^= 0xFF; // Corrupt within the payload (the key or value bytes).
         let result = BinaryKeyValueArchive::from_bytes(&bytes);
         assert!(result.is_err());
         if let Err(ArchiveError::CrcMismatch { .. }) = result {

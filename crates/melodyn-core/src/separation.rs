@@ -881,7 +881,11 @@ fn update_w_kl(
 // Pitch detection helper for spectral subtraction
 // ---------------------------------------------------------------------------
 
-/// Detect dominant pitch using Harmonic Product Spectrum on a magnitude array.
+/// Detect dominant pitch by finding the highest spectral peak in the magnitude array.
+///
+/// Uses simple peak-picking with parabolic interpolation. This is more robust
+/// than HPS for signals that may be pure tones without harmonics (e.g., after
+/// partial spectral subtraction).
 fn detect_dominant_pitch_hps(
     magnitude: &[f64],
     sample_rate: f64,
@@ -891,47 +895,45 @@ fn detect_dominant_pitch_hps(
 ) -> Option<f64> {
     let num_bins = magnitude.len();
     let min_bin = (min_freq * fft_size as f64 / sample_rate).ceil() as usize;
-    let max_bin = (max_freq * fft_size as f64 / sample_rate).floor() as usize;
-    let harmonics = 5usize;
-    let usable = num_bins / harmonics;
+    let max_bin = ((max_freq * fft_size as f64 / sample_rate).floor() as usize).min(num_bins - 1);
 
-    if min_bin >= usable || usable == 0 {
+    if min_bin >= max_bin || min_bin + 1 >= num_bins {
         return None;
     }
 
-    let mut hps = vec![1.0f64; usable];
-    for h in 1..=harmonics {
-        for k in 0..usable {
-            let idx = k * h;
-            if idx < num_bins {
-                hps[k] *= magnitude[idx];
-            }
-        }
-    }
-
-    let search_end = usable.min(max_bin + 1);
-    if min_bin >= search_end {
-        return None;
-    }
-
+    // Find the highest local maximum (peak) in the valid frequency range
     let mut best_bin = min_bin;
-    let mut best_val = hps[min_bin];
-    for k in min_bin..search_end {
-        if hps[k] > best_val {
-            best_val = hps[k];
+    let mut best_val = magnitude[min_bin];
+
+    for k in (min_bin + 1)..max_bin {
+        if magnitude[k] > best_val
+            && magnitude[k] >= magnitude[k - 1]
+            && magnitude[k] >= magnitude[k + 1]
+        {
+            best_val = magnitude[k];
             best_bin = k;
         }
     }
 
-    if best_val < 1e-30 {
+    // Also check the edges of the range
+    if magnitude[min_bin] > best_val {
+        best_val = magnitude[min_bin];
+        best_bin = min_bin;
+    }
+    if max_bin < num_bins && magnitude[max_bin] > best_val {
+        best_val = magnitude[max_bin];
+        best_bin = max_bin;
+    }
+
+    if best_val < 1e-20 {
         return None;
     }
 
-    // Parabolic interpolation
-    let true_bin = if best_bin > 0 && best_bin + 1 < usable {
-        let alpha = hps[best_bin - 1].max(1e-30).ln();
-        let beta = hps[best_bin].max(1e-30).ln();
-        let gamma = hps[best_bin + 1].max(1e-30).ln();
+    // Parabolic interpolation for sub-bin accuracy
+    let true_bin = if best_bin > 0 && best_bin + 1 < num_bins {
+        let alpha = magnitude[best_bin - 1].max(1e-30).ln();
+        let beta = magnitude[best_bin].max(1e-30).ln();
+        let gamma = magnitude[best_bin + 1].max(1e-30).ln();
         let denom = alpha - 2.0 * beta + gamma;
         if denom.abs() > 1e-10 {
             best_bin as f64 + 0.5 * (alpha - gamma) / denom

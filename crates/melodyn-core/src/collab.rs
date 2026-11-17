@@ -6,7 +6,6 @@
 //! and sync protocol message types for a future network layer.
 
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 use thiserror::Error;
 
 // ---------------------------------------------------------------------------

@@ -18,9 +18,12 @@
 //! - **Separation**: Blind source separation (HPSS, NMF, spectral subtraction)
 //! - **Multi-Mic**: Multi-microphone spatial source separation (GCC-PHAT, beamforming)
 //! - **Vocal Isolation**: Vocal extraction via center-channel and harmonic masking
+//! - **Collab**: Collaborative editing sync with operational transformation
+//! - **Undo**: Enhanced undo/redo with compound operations and named steps
 
 pub mod analysis;
 pub mod chord;
+pub mod collab;
 pub mod decomposition;
 pub mod detection;
 pub mod energy_claim;
@@ -33,6 +36,7 @@ pub mod scale;
 pub mod separation;
 pub mod spectral;
 pub mod tempo;
+pub mod undo;
 pub mod vocal_isolation;
 
 // Re-export key types at crate root for convenience
