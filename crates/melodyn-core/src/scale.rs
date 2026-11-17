@@ -462,7 +462,7 @@ impl TurkishMakam {
         let mut best_dist = 53i32;
         for (i, &deg) in self.degrees.iter().enumerate() {
             let dist = ((comma_in_octave as i32 - deg as i32).abs()).min(
-                (53 - (comma_in_octave as i32 - deg as i32).abs()),
+                53 - (comma_in_octave as i32 - deg as i32).abs(),
             );
             if dist < best_dist {
                 best_dist = dist;

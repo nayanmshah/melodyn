@@ -178,7 +178,7 @@ impl PitchDetector {
             if cmndf[tau] < self.config.yin_threshold {
                 // Find the local minimum in this valley
                 let mut local_tau = tau;
-                while local_tau + 1 <= max_lag && cmndf[local_tau + 1] < cmndf[local_tau] {
+                while local_tau < max_lag && cmndf[local_tau + 1] < cmndf[local_tau] {
                     local_tau += 1;
                 }
                 if cmndf[local_tau] < best_val {
@@ -191,9 +191,9 @@ impl PitchDetector {
 
         // If no dip below threshold, find global minimum
         if best_tau == 0 {
-            for tau in min_lag..=max_lag {
-                if cmndf[tau] < best_val {
-                    best_val = cmndf[tau];
+            for (tau, &val) in cmndf.iter().enumerate().take(max_lag + 1).skip(min_lag) {
+                if val < best_val {
+                    best_val = val;
                     best_tau = tau;
                 }
             }
@@ -262,10 +262,10 @@ impl PitchDetector {
 
         let mut hps = vec![1.0f64; usable_bins];
         for h in 1..=harmonics {
-            for k in 0..usable_bins {
+            for (k, hps_val) in hps.iter_mut().enumerate().take(usable_bins) {
                 let idx = k * h;
                 if idx < num_bins {
-                    hps[k] *= magnitude[idx];
+                    *hps_val *= magnitude[idx];
                 }
             }
         }
@@ -274,9 +274,9 @@ impl PitchDetector {
         let search_end = usable_bins.min(max_bin + 1);
         let mut best_bin = min_bin;
         let mut best_val = hps[min_bin];
-        for k in min_bin..search_end {
-            if hps[k] > best_val {
-                best_val = hps[k];
+        for (k, &val) in hps.iter().enumerate().take(search_end).skip(min_bin) {
+            if val > best_val {
+                best_val = val;
                 best_bin = k;
             }
         }
@@ -317,7 +317,7 @@ impl PitchDetector {
         // Confidence from peak prominence
         let mean_hps = hps[min_bin..search_end].iter().sum::<f64>() / (search_end - min_bin) as f64;
         let confidence = if mean_hps > 0.0 {
-            (best_val / mean_hps).log10().max(0.0).min(1.0) / 3.0
+            (best_val / mean_hps).log10().clamp(0.0, 1.0) / 3.0
         } else {
             0.0
         };
@@ -476,7 +476,7 @@ impl PitchDetector {
         let mut notes = Vec::new();
         let mut current_note: Option<NoteAccumulator> = None;
 
-        for (i, pitch) in frame_pitches.iter().enumerate() {
+        for (_i, pitch) in frame_pitches.iter().enumerate() {
             match (pitch, &mut current_note) {
                 (Some(p), Some(acc)) => {
                     // Check if this continues the current note (within ~1 semitone)
@@ -519,7 +519,7 @@ impl PitchDetector {
         let mut active_tracks: Vec<NoteAccumulator> = Vec::new();
         let mut finished_notes: Vec<DetectedNote> = Vec::new();
 
-        for (frame_idx, candidates) in frame_candidates.iter().enumerate() {
+        for (_frame_idx, candidates) in frame_candidates.iter().enumerate() {
             let mut matched = vec![false; candidates.len()];
             let mut track_matched = vec![false; active_tracks.len()];
 
@@ -613,8 +613,8 @@ fn subtract_harmonics(
         let start = bin.saturating_sub(bandwidth);
         let end = (bin + bandwidth + 1).min(num_bins);
 
-        for k in start..end {
-            magnitude[k] *= 0.1; // Attenuate rather than zero to avoid artifacts
+        for mag in magnitude.iter_mut().take(end).skip(start) {
+            *mag *= 0.1; // Attenuate rather than zero to avoid artifacts
         }
     }
 }

@@ -5,10 +5,9 @@
 //! MUPitchMapperCriterion, MUPitchClassMapper, MUBlockVoicingMapper,
 //! MUVoiceMapper, and related classes.
 
-use crate::chord::{ChordDescription, ChordType, PitchClass};
+use crate::chord::{ChordDescription, PitchClass};
 use crate::note::DetectedNote;
-use crate::pitch::PitchCandidate;
-use crate::scale::{CandidateScale, ScaleMode};
+use crate::scale::CandidateScale;
 
 // ---------------------------------------------------------------------------
 // Note mapping

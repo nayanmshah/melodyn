@@ -142,7 +142,7 @@ pub struct DetectionParams {
 
 impl DetectionParams {
     /// Create detection parameters from a preset and sample rate.
-    pub fn from_preset(preset: DetectionPreset, sample_rate: f64) -> Self {
+    pub fn from_preset(preset: DetectionPreset, _sample_rate: f64) -> Self {
         let base = Self {
             preset,
             fft_size: 4096,

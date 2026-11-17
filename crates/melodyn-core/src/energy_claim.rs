@@ -139,7 +139,7 @@ impl EnergyClaimEngine {
         let num_bins = slice.num_bins();
         let freq_res = slice.freq_resolution();
         let sr = slice.sample_rate;
-        let fft_size = slice.fft_size;
+        let _fft_size = slice.fft_size;
 
         // Step 1: Build all claims
         let mut all_claims: Vec<EnergyClaim> = Vec::new();

@@ -22,16 +22,20 @@
 //! - **Undo**: Enhanced undo/redo with compound operations and named steps
 
 pub mod analysis;
+pub mod audio_engine;
+pub mod audio_output;
 pub mod chord;
 pub mod collab;
 pub mod decomposition;
 pub mod detection;
+pub mod document;
 pub mod energy_claim;
 pub mod fft;
 pub mod multimic;
 pub mod note;
 pub mod pitch;
 pub mod pitch_mapper;
+pub mod playback;
 pub mod scale;
 pub mod separation;
 pub mod spectral;

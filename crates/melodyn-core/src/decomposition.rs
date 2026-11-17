@@ -214,7 +214,7 @@ impl AudioDecomposer {
         &self,
         freq: f64,
         tonality: TonalityClass,
-        magnitude: f64,
+        _magnitude: f64,
         transiency_score: f64,
         is_onset: bool,
     ) -> [f64; 5] {

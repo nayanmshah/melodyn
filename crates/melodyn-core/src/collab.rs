@@ -313,7 +313,7 @@ pub fn transform(op: &EditOp, against: &EditOp) -> EditOp {
         // Two tempo sets at the same position: last-writer-wins.
         (
             EditOp::SetTempo { position, bpm },
-            EditOp::SetTempo { position: _, .. },
+            EditOp::SetTempo { .. },
         ) => EditOp::SetTempo {
             position: *position,
             bpm: *bpm,
@@ -322,7 +322,7 @@ pub fn transform(op: &EditOp, against: &EditOp) -> EditOp {
         // Two scale sets at the same position: last-writer-wins.
         (
             EditOp::SetScale { position, scale },
-            EditOp::SetScale { position: _, .. },
+            EditOp::SetScale { .. },
         ) => EditOp::SetScale {
             position: *position,
             scale: scale.clone(),

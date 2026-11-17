@@ -6,7 +6,6 @@
 //! MUChordRootAnalyzer, MUChordTypeAnalyzer, and related classes.
 
 use crate::note::DetectedNote;
-use crate::pitch::PitchCandidate;
 
 // ---------------------------------------------------------------------------
 // Pitch class utilities
