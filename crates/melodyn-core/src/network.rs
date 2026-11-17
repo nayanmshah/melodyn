@@ -985,6 +985,19 @@ mod tests {
 
     // -- Multiple clients concurrent editing --
 
+    /// Helper: wait until a condition is met or timeout.
+    fn wait_until<F: Fn() -> bool>(condition: F, timeout_ms: u64) -> bool {
+        let start = std::time::Instant::now();
+        let timeout = Duration::from_millis(timeout_ms);
+        while start.elapsed() < timeout {
+            if condition() {
+                return true;
+            }
+            thread::sleep(Duration::from_millis(50));
+        }
+        condition()
+    }
+
     #[test]
     fn test_multiple_clients_concurrent_edits() {
         let mut server = start_test_server();
@@ -992,7 +1005,7 @@ mod tests {
 
         let client_a = SyncClient::connect(addr).expect("client A connect");
         let client_b = SyncClient::connect(addr).expect("client B connect");
-        settle();
+        settle_long();
 
         // Drain initial messages.
         let _ = client_a.drain_messages();
@@ -1020,15 +1033,18 @@ mod tests {
 
         client_a.push_operation(op_a).unwrap();
         client_b.push_operation(op_b).unwrap();
-        settle_long();
 
-        // The server should have both operations.
-        let log = server.operation_log();
+        // Poll until both operations appear in the server log.
+        let log_ref = &server;
+        let got_both = wait_until(|| log_ref.operation_log().len() >= 2, 3000);
         assert!(
-            log.len() >= 2,
+            got_both,
             "Server log should have at least 2 ops, got {}",
-            log.len()
+            server.operation_log().len()
         );
+
+        // Give clients time to receive broadcasts.
+        settle_long();
 
         // Both clients should eventually see both operations.
         let a_msgs = client_a.drain_messages().unwrap();

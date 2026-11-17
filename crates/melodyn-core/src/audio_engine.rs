@@ -144,12 +144,12 @@ impl AudioRingBuffer {
         let to_write = data.len().min(available);
         let w = self.write_pos.load(Ordering::Relaxed);
 
-        for i in 0..to_write {
+        for (i, &val) in data.iter().enumerate().take(to_write) {
             let idx = (w + i) & (self.capacity - 1);
             // SAFETY: single producer, index is within bounds
             unsafe {
                 let ptr = self.buffer.as_ptr() as *mut f64;
-                *ptr.add(idx) = data[i];
+                *ptr.add(idx) = val;
             }
         }
 

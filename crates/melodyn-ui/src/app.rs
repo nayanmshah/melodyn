@@ -801,6 +801,42 @@ impl MelodynApp {
         );
     }
 
+    /// Handle files dropped onto the application window.
+    fn handle_dropped_files(&mut self, ctx: &egui::Context) {
+        // Check for hover state (files being dragged over)
+        let has_hover = ctx.input(|i| !i.raw.hovered_files.is_empty());
+        self.state.drop_hover = has_hover;
+
+        // Check for dropped files
+        let dropped: Vec<egui::DroppedFile> =
+            ctx.input(|i| i.raw.dropped_files.clone());
+
+        for file in &dropped {
+            if let Some(ref path) = file.path {
+                let path_str = path.to_string_lossy();
+                // Only accept .wav files
+                if path_str.to_lowercase().ends_with(".wav") {
+                    if let Some((left, right, sr)) =
+                        open_file(&mut self.state, &path_str)
+                    {
+                        let new_engine = PlaybackEngine::new(left, right, sr);
+                        new_engine.set_volume(self.state.volume);
+                        self.playback_engine = Some(new_engine);
+                    }
+                } else {
+                    self.state.status_message = format!(
+                        "Unsupported file type: {}. Only .wav files are supported.",
+                        path.display()
+                    );
+                }
+            }
+        }
+
+        if !dropped.is_empty() {
+            self.state.drop_hover = false;
+        }
+    }
+
     /// Handle global keyboard shortcuts.
     fn handle_shortcuts(&mut self, ctx: &egui::Context) {
         // Tool shortcuts
@@ -1038,6 +1074,9 @@ impl eframe::App for MelodynApp {
             ctx.request_repaint();
         }
 
+        // Handle drag-and-drop
+        self.handle_dropped_files(ctx);
+
         self.handle_shortcuts(ctx);
 
         // Top: menu bar
@@ -1050,20 +1089,63 @@ impl eframe::App for MelodynApp {
             crate::tools::toolbar(ui, &mut self.state);
         });
 
-        // Bottom: status bar
+        // Bottom: status bar with detailed info
         egui::TopBottomPanel::bottom("status_bar")
             .exact_height(22.0)
             .show(ctx, |ui| {
                 ui.horizontal(|ui| {
                     ui.label(&self.state.status_message);
                     ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                        // File name
+                        if let Some(ref path) = self.state.file_path {
+                            if let Some(name) = std::path::Path::new(path)
+                                .file_name()
+                                .and_then(|n| n.to_str())
+                            {
+                                ui.label(
+                                    egui::RichText::new(name)
+                                        .small()
+                                        .color(egui::Color32::from_rgb(160, 160, 180)),
+                                );
+                                ui.separator();
+                            }
+                        }
+                        // Sample rate and duration
+                        if self.state.duration > 0.0 {
+                            ui.label(
+                                egui::RichText::new(format!(
+                                    "{:.0} Hz | {:.1}s",
+                                    self.state.sample_rate, self.state.duration
+                                ))
+                                .small(),
+                            );
+                            ui.separator();
+                        }
+                        // Key
                         if let Some(ref key) = self.state.detected_key {
                             ui.label(format!("Key: {}", key));
+                            ui.separator();
                         }
+                        // Tempo
                         if let Some(tempo) = self.state.detected_tempo {
                             ui.label(format!("{:.1} BPM", tempo));
+                            ui.separator();
                         }
-                        ui.label(format!("{} notes", self.state.notes.len()));
+                        // Current tool name
+                        ui.label(
+                            egui::RichText::new(self.state.active_tool.label())
+                                .small()
+                                .color(egui::Color32::from_rgb(180, 160, 100)),
+                        );
+                        ui.separator();
+                        // Selected / total notes
+                        let selected = self.state.selected_notes.len();
+                        let total = self.state.notes.len();
+                        if selected > 0 {
+                            ui.label(format!("{}/{} notes", selected, total));
+                        } else {
+                            ui.label(format!("{} notes", total));
+                        }
                     });
                 });
             });
@@ -1091,6 +1173,44 @@ impl eframe::App for MelodynApp {
                 crate::inspector::inspector_panel(ui, &mut self.state);
             });
 
+        // Left: track list panel
+        // We temporarily take the track list out to avoid double borrow.
+        let mut track_list = std::mem::take(&mut self.state.track_list);
+        egui::SidePanel::left("track_list")
+            .resizable(true)
+            .default_width(200.0)
+            .min_width(150.0)
+            .show(ctx, |ui| {
+                crate::tracks::track_list_panel(
+                    ui,
+                    &mut track_list,
+                    &mut self.state,
+                );
+            });
+        self.state.track_list = track_list;
+
+        // Drag-and-drop overlay indicator
+        if self.state.drop_hover {
+            egui::Area::new(egui::Id::new("drop_overlay"))
+                .fixed_pos(egui::pos2(0.0, 0.0))
+                .show(ctx, |ui| {
+                    let screen = ctx.screen_rect();
+                    let painter = ui.painter();
+                    painter.rect_filled(
+                        screen,
+                        0.0,
+                        egui::Color32::from_rgba_premultiplied(40, 80, 160, 60),
+                    );
+                    painter.text(
+                        screen.center(),
+                        egui::Align2::CENTER_CENTER,
+                        "Drop WAV file to open",
+                        egui::FontId::proportional(28.0),
+                        egui::Color32::WHITE,
+                    );
+                });
+        }
+
         // Central: timeline ruler + piano roll editor
         egui::CentralPanel::default().show(ctx, |ui| {
             crate::timeline::timeline_ruler(ui, &self.state);
@@ -1098,4 +1218,49 @@ impl eframe::App for MelodynApp {
             crate::editor::piano_roll_editor(ui, &mut self.state);
         });
     }
+}
+
+// ---------------------------------------------------------------------------
+// Fit view helper
+// ---------------------------------------------------------------------------
+
+/// Adjust the view to show all notes in the editor.
+fn fit_view_to_notes(state: &mut AppState) {
+    if state.notes.is_empty() {
+        state.time_offset = 0.0;
+        state.pitch_offset = 48.0;
+        return;
+    }
+
+    let min_time = state
+        .notes
+        .iter()
+        .map(|n| n.effective_start())
+        .fold(f64::MAX, f64::min);
+    let max_time = state
+        .notes
+        .iter()
+        .map(|n| n.effective_end())
+        .fold(f64::MIN, f64::max);
+    let min_midi = state
+        .notes
+        .iter()
+        .map(|n| n.effective_midi())
+        .fold(f64::MAX, f64::min);
+    let max_midi = state
+        .notes
+        .iter()
+        .map(|n| n.effective_midi())
+        .fold(f64::MIN, f64::max);
+
+    let time_range = (max_time - min_time).max(1.0);
+    state.time_offset = min_time - time_range * 0.05;
+    // time_scale will be adjusted to fit content (approximate)
+    state.time_scale = 100.0; // A reasonable default; editor width-dependent
+
+    state.pitch_offset = min_midi - 4.0;
+    let pitch_range = (max_midi - min_midi).max(12.0);
+    state.pitch_scale = (400.0 / pitch_range).clamp(4.0, 60.0);
+
+    state.status_message = "View fitted to notes".to_string();
 }

@@ -4,7 +4,7 @@
 //! controls for solo, mute, volume, color, adding/removing tracks,
 //! reordering via drag, and selecting the active track.
 
-use eframe::egui::{self, Color32, Rect, Pos2, Stroke, Vec2};
+use eframe::egui::{self, Color32, Stroke, Vec2};
 
 use crate::app::AppState;
 
@@ -83,7 +83,7 @@ pub struct TrackListState {
     /// Index of the currently active track (shown in the editor).
     pub active_track: usize,
     /// Track being dragged for reorder (if any).
-    drag_source: Option<usize>,
+    _drag_source: Option<usize>,
     /// Whether the color picker popup is open and for which track.
     color_picker_track: Option<usize>,
     /// Pending confirmation for track removal.
@@ -95,7 +95,7 @@ impl Default for TrackListState {
         Self {
             tracks: vec![TrackUiState::new("Track 1".to_string(), 0)],
             active_track: 0,
-            drag_source: None,
+            _drag_source: None,
             color_picker_track: None,
             confirm_remove: None,
         }
@@ -245,9 +245,9 @@ pub fn track_list_panel(
                 };
 
                 // Track row frame
-                let frame = egui::Frame::NONE
+                let frame = egui::Frame::default()
                     .fill(bg)
-                    .inner_margin(egui::Margin::same(4))
+                    .inner_margin(egui::Margin::same(4.0))
                     .stroke(if is_active {
                         Stroke::new(1.0, track_color)
                     } else {
@@ -372,7 +372,7 @@ pub fn track_list_panel(
             .resizable(false)
             .show(ui.ctx(), |ui| {
                 ui.horizontal_wrapped(|ui| {
-                    for (ci, &(r, g, b)) in TRACK_COLORS.iter().enumerate() {
+                    for (_ci, &(r, g, b)) in TRACK_COLORS.iter().enumerate() {
                         let color = Color32::from_rgb(
                             (r * 255.0) as u8,
                             (g * 255.0) as u8,
