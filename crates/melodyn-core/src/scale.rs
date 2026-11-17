@@ -288,11 +288,13 @@ pub fn detect_key(distribution: &[f64; 12]) -> Vec<CandidateScale> {
     });
 
     // Normalize confidence: best = 1.0, relative to range.
-    if let (Some(best), Some(worst)) = (candidates.first(), candidates.last()) {
-        let range = best.correlation - worst.correlation;
+    if candidates.len() >= 2 {
+        let best_corr = candidates.first().unwrap().correlation;
+        let worst_corr = candidates.last().unwrap().correlation;
+        let range = best_corr - worst_corr;
         if range > 1e-12 {
             for c in &mut candidates {
-                c.confidence = ((c.correlation - worst.correlation) / range).clamp(0.0, 1.0);
+                c.confidence = ((c.correlation - worst_corr) / range).clamp(0.0, 1.0);
             }
         }
     }
@@ -348,11 +350,13 @@ pub fn detect_scale(distribution: &[f64; 12]) -> Vec<CandidateScale> {
     });
 
     // Normalize confidence
-    if let (Some(best), Some(worst)) = (candidates.first(), candidates.last()) {
-        let range = best.correlation - worst.correlation;
+    if candidates.len() >= 2 {
+        let best_corr = candidates.first().unwrap().correlation;
+        let worst_corr = candidates.last().unwrap().correlation;
+        let range = best_corr - worst_corr;
         if range > 1e-12 {
             for c in &mut candidates {
-                c.confidence = ((c.correlation - worst.correlation) / range).clamp(0.0, 1.0);
+                c.confidence = ((c.correlation - worst_corr) / range).clamp(0.0, 1.0);
             }
         }
     }

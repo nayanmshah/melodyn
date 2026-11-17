@@ -875,8 +875,9 @@ impl PitchMapper {
         }
 
         // Set quality scores based on final penalty
+        let n_mappings = mappings.len().max(1) as f64;
         for m in &mut mappings {
-            m.quality = (1.0 - best_penalty / mappings.len().max(1) as f64).clamp(0.0, 1.0);
+            m.quality = (1.0 - best_penalty / n_mappings).clamp(0.0, 1.0);
         }
 
         mappings
