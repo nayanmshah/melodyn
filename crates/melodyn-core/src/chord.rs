@@ -803,6 +803,7 @@ pub fn parse_chord(input: &str) -> Option<ChordDescription> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::pitch::PitchCandidate;
 
     fn make_note(midi: f64, start: f64, dur: f64, amp: f64) -> DetectedNote {
         DetectedNote {

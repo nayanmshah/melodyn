@@ -7,7 +7,6 @@ license.workspace = true
 
 [dependencies]
 melodyn-core = { workspace = true }
-melodyn-synth = { workspace = true }
 rustfft = { workspace = true }
 num-complex = { workspace = true }
 log = { workspace = true }

@@ -237,7 +237,7 @@ fn draw_grid(painter: &egui::Painter, rect: Rect, state: &AppState) {
 /// Choose a readable time interval for grid lines based on visible range.
 fn choose_time_interval(visible_range: f64, width_px: f32) -> f64 {
     let target_spacing = 80.0; // pixels between grid lines
-    let raw = visible_range * target_spacing as f64 / width_px as f64;
+    let raw = visible_range * target_spacing / width_px as f64;
     let intervals = [0.1, 0.25, 0.5, 1.0, 2.0, 5.0, 10.0, 30.0, 60.0];
     for &iv in &intervals {
         if iv >= raw {

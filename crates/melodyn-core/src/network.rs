@@ -18,7 +18,7 @@ use std::thread::{self, JoinHandle};
 use std::time::Duration;
 
 use crate::collab::{
-    CollabError, CollabResult, EditOp, EditOperation, EditSession, OperationLog, SyncMessage,
+    CollabError, EditOp, EditOperation, EditSession, OperationLog, SyncMessage,
 };
 
 // ---------------------------------------------------------------------------
@@ -130,8 +130,6 @@ pub fn recv_message(stream: &mut TcpStream) -> NetworkResult<SyncMessage> {
 
 /// A handle to a connected client, held by the server.
 struct ClientHandle {
-    /// Unique client identifier (assigned by the server).
-    id: String,
     /// Sender half of a channel used to queue outgoing messages.
     sender: Sender<SyncMessage>,
     /// Whether this client handle is still alive.
@@ -163,6 +161,7 @@ pub struct SyncServer {
     /// Handle to the accept-loop thread.
     accept_handle: Option<JoinHandle<()>>,
     /// Counter for assigning unique client IDs.
+    #[allow(dead_code)]
     next_client_id: Arc<Mutex<u64>>,
     /// Optional model snapshot JSON for initial sync.
     model_snapshot: Arc<Mutex<Option<String>>>,
@@ -304,7 +303,6 @@ impl SyncServer {
             map.insert(
                 client_id.clone(),
                 ClientHandle {
-                    id: client_id.clone(),
                     sender: tx,
                     alive: Arc::clone(&alive),
                 },

@@ -211,8 +211,8 @@ fn cmd_analyze(input: &str, preset_name: &str, output: Option<&str>, decompose: 
             }
         }
         let n = decomp.frames.len() as f64;
-        for c in 0..5 {
-            avg_energy[c] /= n;
+        for avg in &mut avg_energy {
+            *avg /= n;
         }
 
         let total: f64 = avg_energy.iter().sum();

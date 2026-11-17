@@ -64,7 +64,7 @@ impl OverlapAddConfig {
     /// be constant. This returns the normalization factor.
     pub fn cola_normalization(&self) -> f64 {
         let mut sum_at_center = 0.0;
-        let steps = (self.window_size + self.hop_size - 1) / self.hop_size;
+        let steps = self.window_size.div_ceil(self.hop_size);
         for step in 0..steps {
             let offset = step * self.hop_size;
             let window_idx = self.window_size / 2;

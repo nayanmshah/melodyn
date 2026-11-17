@@ -926,6 +926,9 @@ impl PitchMapper {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::chord::ChordType;
+    use crate::pitch::PitchCandidate;
+    use crate::scale::ScaleMode;
 
     fn make_note(midi: f64, start: f64, dur: f64, amp: f64) -> DetectedNote {
         DetectedNote {

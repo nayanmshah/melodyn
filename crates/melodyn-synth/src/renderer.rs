@@ -46,6 +46,24 @@ impl Default for RenderRequest {
 }
 
 // ---------------------------------------------------------------------------
+// Frame render parameters
+// ---------------------------------------------------------------------------
+
+/// Parameters for rendering a single frame of a partial.
+pub struct FrameRenderParams {
+    /// Index of the frame being rendered.
+    pub frame_index: usize,
+    /// Frequency of the partial in Hz.
+    pub frequency: f64,
+    /// Sample rate in Hz.
+    pub sample_rate: f64,
+    /// Hop size in samples.
+    pub hop_size: usize,
+    /// Offset into the output buffer.
+    pub output_offset: usize,
+}
+
+// ---------------------------------------------------------------------------
 // Component renderer (single partial)
 // ---------------------------------------------------------------------------
 
@@ -81,13 +99,14 @@ impl ComponentRenderer {
     pub fn render_frame(
         &mut self,
         partial: &LssPartial,
-        frame_index: usize,
-        frequency: f64,
-        sample_rate: f64,
-        hop_size: usize,
+        params: &FrameRenderParams,
         output: &mut [f64],
-        output_offset: usize,
     ) {
+        let frame_index = params.frame_index;
+        let frequency = params.frequency;
+        let sample_rate = params.sample_rate;
+        let hop_size = params.hop_size;
+        let output_offset = params.output_offset;
         let target_amp = if frame_index < partial.synth_amps.len() {
             partial.synth_amps[frame_index]
         } else {
@@ -192,12 +211,14 @@ impl ElementRenderer {
 
                 self.component_renderers[p_idx].render_frame(
                     partial,
-                    frame_idx,
-                    freq,
-                    sr,
-                    hop,
+                    &FrameRenderParams {
+                        frame_index: frame_idx,
+                        frequency: freq,
+                        sample_rate: sr,
+                        hop_size: hop,
+                        output_offset,
+                    },
                     &mut output,
-                    output_offset,
                 );
             }
         }
@@ -348,7 +369,13 @@ mod tests {
         partial.active = true;
 
         let mut output = vec![0.0f64; 1024];
-        cr.render_frame(&partial, 0, 440.0, 44100.0, 256, &mut output, 0);
+        cr.render_frame(&partial, &FrameRenderParams {
+            frame_index: 0,
+            frequency: 440.0,
+            sample_rate: 44100.0,
+            hop_size: 256,
+            output_offset: 0,
+        }, &mut output);
 
         // Should produce non-zero output
         let energy: f64 = output[..256].iter().map(|s| s * s).sum();

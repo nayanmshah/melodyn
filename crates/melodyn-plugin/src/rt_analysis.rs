@@ -310,16 +310,27 @@ impl RealTimeAnalysisCache {
 
         let sample_pos = self.ring.total_written();
 
-        // Run YIN pitch detection.
-        let estimate = match self.detector.detect_yin(&self.frame_buffer) {
-            Some(candidate) => PitchEstimate {
-                frequency: candidate.frequency,
-                midi_note: candidate.midi_note,
-                confidence: candidate.confidence,
-                amplitude: candidate.amplitude,
-                sample_position: sample_pos,
-            },
-            None => PitchEstimate::unvoiced(sample_pos),
+        // Check if the frame has enough energy to be worth analyzing.
+        // This avoids false positives on silence / very quiet signals.
+        let rms = (self.frame_buffer.iter().map(|&s| s * s).sum::<f64>()
+            / self.config.window_size as f64)
+            .sqrt();
+        let silence_threshold = 1e-6;
+
+        let estimate = if rms < silence_threshold {
+            PitchEstimate::unvoiced(sample_pos)
+        } else {
+            // Run YIN pitch detection.
+            match self.detector.detect_yin(&self.frame_buffer) {
+                Some(candidate) => PitchEstimate {
+                    frequency: candidate.frequency,
+                    midi_note: candidate.midi_note,
+                    confidence: candidate.confidence,
+                    amplitude: candidate.amplitude,
+                    sample_position: sample_pos,
+                },
+                None => PitchEstimate::unvoiced(sample_pos),
+            }
         };
 
         // Store in history.

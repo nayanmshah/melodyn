@@ -211,8 +211,8 @@ impl LssCorrelator {
             let freq = partial.frequency;
             let phase_inc = 2.0 * PI * freq * self.hop_size as f64 / self.sample_rate;
             let mut phase = 0.0f64;
-            for i in 0..num_frames {
-                partial.synth_phases[i] = phase;
+            for synth_phase in partial.synth_phases.iter_mut().take(num_frames) {
+                *synth_phase = phase;
                 phase += phase_inc;
                 // Keep phase in reasonable range to avoid precision loss
                 if phase > 1000.0 * PI {
@@ -245,18 +245,18 @@ impl LssCorrelator {
             let base_amp = note.amplitude / h as f64;
 
             // Simple amplitude envelope from the note's amplitude contour
-            for i in 0..num_frames {
+            for (i, synth_amp) in partial.synth_amps.iter_mut().enumerate().take(num_frames) {
                 let t = note.start_time + i as f64 / model.frame_rate;
                 let env = note.amplitude_at(t) / note.amplitude.max(1e-10);
-                partial.synth_amps[i] = base_amp * env;
+                *synth_amp = base_amp * env;
             }
 
             // Phase trajectory
             let freq = partial.frequency;
             let phase_inc = 2.0 * PI * freq * self.hop_size as f64 / self.sample_rate;
             let mut phase = 0.0f64;
-            for i in 0..num_frames {
-                partial.synth_phases[i] = phase;
+            for synth_phase in partial.synth_phases.iter_mut().take(num_frames) {
+                *synth_phase = phase;
                 phase += phase_inc;
                 if phase > 1000.0 * PI {
                     phase -= (phase / (2.0 * PI)).floor() * 2.0 * PI;
@@ -340,11 +340,11 @@ impl LssGenerator {
             let mut phase = 0.0f64;
             let omega = 2.0 * PI * freq / sr;
 
-            for sample_idx in 0..num_samples {
+            for (sample_idx, out_val) in output.iter_mut().enumerate().take(num_samples) {
                 let frame_pos = sample_idx as f64 / hop as f64;
                 let amp = partial.amplitude_at(frame_pos);
 
-                output[sample_idx] += amp * phase.sin();
+                *out_val += amp * phase.sin();
                 phase += omega;
 
                 // Prevent phase accumulation overflow

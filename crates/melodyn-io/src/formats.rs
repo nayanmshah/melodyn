@@ -274,7 +274,7 @@ pub fn audio_file_info<P: AsRef<Path>>(path: P) -> Result<AudioFileInfo, FormatE
         .format(&hint, mss, &format_opts, &metadata_opts)
         .map_err(|e| FormatError::ProbeError(format!("{}: {}", path.display(), e)))?;
 
-    let format_reader = probed.format;
+    let mut format_reader = probed.format;
 
     let track = format_reader
         .tracks()
