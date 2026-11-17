@@ -9,7 +9,6 @@
 
 use crate::note::DetectedNote;
 use crate::spectral::SpectralTimeSlice;
-use std::f64::consts::PI;
 
 // ---------------------------------------------------------------------------
 // Configuration

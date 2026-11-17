@@ -7,10 +7,6 @@ license.workspace = true
 
 [dependencies]
 melodyn-core = { workspace = true }
-num-complex = { workspace = true }
-num-traits = { workspace = true }
-rayon = { workspace = true }
-thiserror = { workspace = true }
 log = { workspace = true }
 
 [dev-dependencies]

@@ -5,7 +5,7 @@
 //! This module corresponds to the MUElementAnalyzerEngine in the original.
 
 use crate::detection::DetectionPreset;
-use crate::fft::{StackedFft, StackedFftConfig, StackedFftResult, WindowType};
+use crate::fft::{StackedFft, StackedFftConfig, StackedFftResult};
 use crate::note::DetectedNote;
 use crate::pitch::{PitchDetector, PitchDetectorConfig};
 use crate::spectral::{ReassignedSpectrogram, ReassignedSpectrogramConfig, SpectralTimeSlice};
