@@ -145,11 +145,7 @@ pub fn read_audio_file<P: AsRef<Path>>(path: P) -> Result<AudioBuffer, FormatErr
     let track = format_reader
         .tracks()
         .iter()
-        .find(|t| {
-            t.codec_params
-                .codec
-                != symphonia::core::codecs::CODEC_TYPE_NULL
-        })
+        .find(|t| t.codec_params.codec != symphonia::core::codecs::CODEC_TYPE_NULL)
         .ok_or(FormatError::NoAudioTrack)?;
 
     let track_id = track.id;
@@ -159,10 +155,7 @@ pub fn read_audio_file<P: AsRef<Path>>(path: P) -> Result<AudioBuffer, FormatErr
         .sample_rate
         .ok_or_else(|| FormatError::DecodeError("Missing sample rate".to_string()))?;
 
-    let channels = codec_params
-        .channels
-        .map(|ch| ch.count())
-        .unwrap_or(1);
+    let channels = codec_params.channels.map(|ch| ch.count()).unwrap_or(1);
 
     let decoder_opts = DecoderOptions::default();
     let mut decoder = symphonia::default::get_codecs()
@@ -186,7 +179,10 @@ pub fn read_audio_file<P: AsRef<Path>>(path: P) -> Result<AudioBuffer, FormatErr
                 break;
             }
             Err(e) => {
-                return Err(FormatError::DecodeError(format!("Packet read error: {}", e)));
+                return Err(FormatError::DecodeError(format!(
+                    "Packet read error: {}",
+                    e
+                )));
             }
         };
 
@@ -224,11 +220,7 @@ pub fn read_audio_file<P: AsRef<Path>>(path: P) -> Result<AudioBuffer, FormatErr
     let num_samples_per_channel = all_samples.len().checked_div(num_channels).unwrap_or(0);
 
     if num_samples_per_channel == 0 {
-        return Ok(AudioBuffer::new(
-            num_channels,
-            0,
-            sample_rate as f64,
-        ));
+        return Ok(AudioBuffer::new(num_channels, 0, sample_rate as f64));
     }
 
     Ok(AudioBuffer::from_interleaved(
@@ -275,9 +267,7 @@ pub fn audio_file_info<P: AsRef<Path>>(path: P) -> Result<AudioFileInfo, FormatE
     let track = format_reader
         .tracks()
         .iter()
-        .find(|t| {
-            t.codec_params.codec != symphonia::core::codecs::CODEC_TYPE_NULL
-        })
+        .find(|t| t.codec_params.codec != symphonia::core::codecs::CODEC_TYPE_NULL)
         .ok_or(FormatError::NoAudioTrack)?;
 
     let codec_params = &track.codec_params;
@@ -471,12 +461,7 @@ mod tests {
 
         for i in 0..read_back.num_samples() {
             let diff = (read_back.get(0, i) - samples[i]).abs();
-            assert!(
-                diff < 0.001,
-                "Float WAV sample {} differs by {}",
-                i,
-                diff
-            );
+            assert!(diff < 0.001, "Float WAV sample {} differs by {}", i, diff);
         }
 
         let _ = std::fs::remove_file(&path);

@@ -16,7 +16,12 @@ fn sine_wave(freq: f64, sample_rate: f64, num_samples: usize) -> Vec<f64> {
 }
 
 /// Generate a sine wave with harmonics (1/h amplitude decay).
-fn harmonic_tone(freq: f64, num_harmonics: usize, sample_rate: f64, num_samples: usize) -> Vec<f64> {
+fn harmonic_tone(
+    freq: f64,
+    num_harmonics: usize,
+    sample_rate: f64,
+    num_samples: usize,
+) -> Vec<f64> {
     let mut signal = vec![0.0; num_samples];
     for h in 1..=num_harmonics {
         let hf = freq * h as f64;
@@ -53,12 +58,7 @@ fn click_track(bpm: f64, sample_rate: f64, duration_secs: f64) -> Vec<f64> {
 }
 
 /// Generate a melody: a sequence of notes each `note_dur` seconds.
-fn melody(
-    freqs: &[f64],
-    note_dur: f64,
-    sample_rate: f64,
-    num_harmonics: usize,
-) -> Vec<f64> {
+fn melody(freqs: &[f64], note_dur: f64, sample_rate: f64, num_harmonics: usize) -> Vec<f64> {
     let samples_per_note = (note_dur * sample_rate) as usize;
     let total = samples_per_note * freqs.len();
     let mut signal = vec![0.0; total];
@@ -140,10 +140,7 @@ fn test_monophonic_pitch_detection_accuracy() {
         use_stacked_fft: false,
         min_note_duration: 0.05,
         min_note_amplitude: 0.0001,
-        ..melodyn_core::AnalysisConfig::from_preset(
-            melodyn_core::DetectionPreset::Melodic,
-            sr,
-        )
+        ..melodyn_core::AnalysisConfig::from_preset(melodyn_core::DetectionPreset::Melodic, sr)
     };
     let analyzer = melodyn_core::SpectralAnalyzer::new(config);
     let result = analyzer.analyze(&audio);
@@ -216,10 +213,8 @@ fn test_polyphonic_pitch_detection() {
         }
     }
 
-    let config = melodyn_core::AnalysisConfig::from_preset(
-        melodyn_core::DetectionPreset::Polyphonic,
-        sr,
-    );
+    let config =
+        melodyn_core::AnalysisConfig::from_preset(melodyn_core::DetectionPreset::Polyphonic, sr);
     let analyzer = melodyn_core::SpectralAnalyzer::new(config);
     let result = analyzer.analyze(&audio);
 
@@ -261,10 +256,7 @@ fn test_pitch_shift_via_lss() {
         use_stacked_fft: false,
         min_note_duration: 0.03,
         min_note_amplitude: 0.0001,
-        ..melodyn_core::AnalysisConfig::from_preset(
-            melodyn_core::DetectionPreset::Melodic,
-            sr,
-        )
+        ..melodyn_core::AnalysisConfig::from_preset(melodyn_core::DetectionPreset::Melodic, sr)
     };
     let analyzer = melodyn_core::SpectralAnalyzer::new(config);
     let result = analyzer.analyze(&audio);
@@ -293,9 +285,13 @@ fn test_pitch_shift_via_lss() {
     );
 
     // Verify the output has energy
-    let rms = (shifted_audio.iter().map(|s| s * s).sum::<f64>() / shifted_audio.len() as f64)
-        .sqrt();
-    assert!(rms > 0.001, "Shifted audio RMS {} should be non-trivial", rms);
+    let rms =
+        (shifted_audio.iter().map(|s| s * s).sum::<f64>() / shifted_audio.len() as f64).sqrt();
+    assert!(
+        rms > 0.001,
+        "Shifted audio RMS {} should be non-trivial",
+        rms
+    );
 
     // Run pitch detection on the shifted output to verify it is near 880 Hz
     let pitch_config = melodyn_core::PitchDetectorConfig {
@@ -473,10 +469,30 @@ fn test_chord_detection_accuracy() {
     // G:  G(67) B(71) D(74)
     // F:  F(65) A(69) C(72)
     let chord_sequences = [
-        ("Am", vec![69.0, 72.0, 76.0], 9u8, melodyn_core::ChordType::Minor),
-        ("C",  vec![60.0, 64.0, 67.0], 0u8, melodyn_core::ChordType::Major),
-        ("G",  vec![67.0, 71.0, 74.0], 7u8, melodyn_core::ChordType::Major),
-        ("F",  vec![65.0, 69.0, 72.0], 5u8, melodyn_core::ChordType::Major),
+        (
+            "Am",
+            vec![69.0, 72.0, 76.0],
+            9u8,
+            melodyn_core::ChordType::Minor,
+        ),
+        (
+            "C",
+            vec![60.0, 64.0, 67.0],
+            0u8,
+            melodyn_core::ChordType::Major,
+        ),
+        (
+            "G",
+            vec![67.0, 71.0, 74.0],
+            7u8,
+            melodyn_core::ChordType::Major,
+        ),
+        (
+            "F",
+            vec![65.0, 69.0, 72.0],
+            5u8,
+            melodyn_core::ChordType::Major,
+        ),
     ];
 
     for (name, midi_notes, expected_root, expected_type) in &chord_sequences {
@@ -491,8 +507,7 @@ fn test_chord_detection_accuracy() {
 
         // Check that the expected chord type appears among the candidates
         let found = candidates.iter().any(|c| {
-            c.description.root == *expected_root
-                && c.description.chord_type == *expected_type
+            c.description.root == *expected_root && c.description.chord_type == *expected_type
         });
         assert!(
             found,
@@ -892,10 +907,7 @@ fn test_audio_quality_snr() {
         use_stacked_fft: false,
         min_note_duration: 0.03,
         min_note_amplitude: 0.0001,
-        ..melodyn_core::AnalysisConfig::from_preset(
-            melodyn_core::DetectionPreset::Melodic,
-            sr,
-        )
+        ..melodyn_core::AnalysisConfig::from_preset(melodyn_core::DetectionPreset::Melodic, sr)
     };
     let analyzer = melodyn_core::SpectralAnalyzer::new(config);
     let result = analyzer.analyze(&original);
@@ -918,14 +930,9 @@ fn test_audio_quality_snr() {
     let resynthesized = gen.synthesize_note(&model);
 
     // Both should have significant energy
-    let orig_rms =
-        (original.iter().map(|s| s * s).sum::<f64>() / original.len() as f64).sqrt();
-    let resynth_rms = (resynthesized
-        .iter()
-        .map(|s| s * s)
-        .sum::<f64>()
-        / resynthesized.len() as f64)
-        .sqrt();
+    let orig_rms = (original.iter().map(|s| s * s).sum::<f64>() / original.len() as f64).sqrt();
+    let resynth_rms =
+        (resynthesized.iter().map(|s| s * s).sum::<f64>() / resynthesized.len() as f64).sqrt();
 
     assert!(
         orig_rms > 0.01,
@@ -1025,7 +1032,10 @@ fn test_stress_rapid_note_changes() {
         assert!(note.frequency > 0.0, "Frequency should be positive");
         assert!(note.duration >= 0.0, "Duration should be non-negative");
         assert!(note.amplitude >= 0.0, "Amplitude should be non-negative");
-        assert!(note.confidence >= 0.0 && note.confidence <= 1.0, "Confidence should be in [0, 1]");
+        assert!(
+            note.confidence >= 0.0 && note.confidence <= 1.0,
+            "Confidence should be in [0, 1]"
+        );
     }
 }
 
@@ -1043,10 +1053,7 @@ fn test_stress_various_sample_rates() {
             use_stacked_fft: false,
             min_note_duration: 0.03,
             min_note_amplitude: 0.0001,
-            ..melodyn_core::AnalysisConfig::from_preset(
-                melodyn_core::DetectionPreset::Melodic,
-                sr,
-            )
+            ..melodyn_core::AnalysisConfig::from_preset(melodyn_core::DetectionPreset::Melodic, sr)
         };
         // Update the sub-configs to match
         let mut config = config;
@@ -1096,7 +1103,10 @@ fn test_stress_silence() {
     // Should not detect pitched notes in silence (or very few)
     // Allow some false detections but they should be low-confidence
     for note in &result.notes {
-        assert!(note.frequency.is_finite(), "Frequency should be finite in silence test");
+        assert!(
+            note.frequency.is_finite(),
+            "Frequency should be finite in silence test"
+        );
     }
 }
 
@@ -1210,15 +1220,15 @@ fn test_full_pipeline_integration() {
         use_stacked_fft: false,
         min_note_duration: 0.05,
         min_note_amplitude: 0.0001,
-        ..melodyn_core::AnalysisConfig::from_preset(
-            melodyn_core::DetectionPreset::Melodic,
-            sr,
-        )
+        ..melodyn_core::AnalysisConfig::from_preset(melodyn_core::DetectionPreset::Melodic, sr)
     };
     let analyzer = melodyn_core::SpectralAnalyzer::new(config);
     let analysis = analyzer.analyze(&audio);
 
-    assert!(!analysis.spectral_slices.is_empty(), "Should have spectral data");
+    assert!(
+        !analysis.spectral_slices.is_empty(),
+        "Should have spectral data"
+    );
 
     // Step 2: Chord analysis (using synthetic notes if analysis didn't find enough)
     let notes_for_analysis: Vec<melodyn_core::DetectedNote> = if analysis.notes.len() >= 3 {
@@ -1310,19 +1320,15 @@ fn test_decomposition_runs() {
     let config = melodyn_core::AnalysisConfig {
         sample_rate: sr,
         use_stacked_fft: false,
-        ..melodyn_core::AnalysisConfig::from_preset(
-            melodyn_core::DetectionPreset::Melodic,
-            sr,
-        )
+        ..melodyn_core::AnalysisConfig::from_preset(melodyn_core::DetectionPreset::Melodic, sr)
     };
     let analyzer = melodyn_core::SpectralAnalyzer::new(config);
     let result = analyzer.analyze(&audio);
 
     // Run decomposition if we have slices
     if !result.spectral_slices.is_empty() {
-        let decomposer = melodyn_core::AudioDecomposer::new(
-            melodyn_core::DecompositionConfig::default(),
-        );
+        let decomposer =
+            melodyn_core::AudioDecomposer::new(melodyn_core::DecompositionConfig::default());
         let decomposition = decomposer.decompose(&result.spectral_slices);
 
         // Should have one frame per spectral slice
@@ -1369,10 +1375,17 @@ fn test_lss_multi_note_synthesis() {
     let gen = melodyn_synth::LssGenerator::new(melodyn_synth::LssGeneratorConfig::default());
     let mixed = gen.synthesize_mix(&models);
 
-    assert!(!mixed.is_empty(), "Multi-note synthesis should produce audio");
+    assert!(
+        !mixed.is_empty(),
+        "Multi-note synthesis should produce audio"
+    );
 
     let rms = (mixed.iter().map(|s| s * s).sum::<f64>() / mixed.len() as f64).sqrt();
-    assert!(rms > 0.001, "Mixed output RMS {} should be non-trivial", rms);
+    assert!(
+        rms > 0.001,
+        "Mixed output RMS {} should be non-trivial",
+        rms
+    );
 
     // All finite
     for &s in &mixed {

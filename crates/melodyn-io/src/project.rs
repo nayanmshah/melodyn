@@ -6,9 +6,7 @@
 //! composition). The `.mdd` format stores pre-computed analysis results linked
 //! to source audio by content hash, allowing analysis to be skipped on reopen.
 
-use crate::archive::{
-    ArchiveError, BinaryKeyValueArchive, FileArchive,
-};
+use crate::archive::{ArchiveError, BinaryKeyValueArchive, FileArchive};
 use md5::{Digest, Md5};
 use std::io::{Cursor, Read, Seek, Write};
 use std::path::{Path, PathBuf};
@@ -150,7 +148,10 @@ impl SerializedNote {
         a.set_f64("release_time", self.release_time);
         // Store contours as packed f64 bytes.
         a.set_bytes("pitch_contour", f64_vec_to_bytes(&self.pitch_contour));
-        a.set_bytes("amplitude_contour", f64_vec_to_bytes(&self.amplitude_contour));
+        a.set_bytes(
+            "amplitude_contour",
+            f64_vec_to_bytes(&self.amplitude_contour),
+        );
         a
     }
 
@@ -169,12 +170,8 @@ impl SerializedNote {
             vibrato_depth: a.get_f64("vibrato_depth").unwrap_or(0.0),
             attack_time: a.get_f64("attack_time").unwrap_or(0.0),
             release_time: a.get_f64("release_time").unwrap_or(0.0),
-            pitch_contour: bytes_to_f64_vec(
-                a.get_bytes("pitch_contour").unwrap_or(&[]),
-            ),
-            amplitude_contour: bytes_to_f64_vec(
-                a.get_bytes("amplitude_contour").unwrap_or(&[]),
-            ),
+            pitch_contour: bytes_to_f64_vec(a.get_bytes("pitch_contour").unwrap_or(&[])),
+            amplitude_contour: bytes_to_f64_vec(a.get_bytes("amplitude_contour").unwrap_or(&[])),
         })
     }
 }
@@ -591,11 +588,17 @@ impl DetectionData {
         let header = BinaryKeyValueArchive::from_bytes(&header_bytes)?;
 
         let source_hash = header.get_string("source_hash").unwrap_or("").to_string();
-        let source_filename = header.get_string("source_filename").unwrap_or("").to_string();
+        let source_filename = header
+            .get_string("source_filename")
+            .unwrap_or("")
+            .to_string();
         let sample_rate = header.get_f64("sample_rate").unwrap_or(44100.0);
         let duration = header.get_f64("duration").unwrap_or(0.0);
         let channel_count = header.get_i32("channel_count").unwrap_or(1) as u32;
-        let analysis_preset = header.get_string("analysis_preset").unwrap_or("Automatic").to_string();
+        let analysis_preset = header
+            .get_string("analysis_preset")
+            .unwrap_or("Automatic")
+            .to_string();
         let detected_tempo = header.get_f64("detected_tempo").unwrap_or(0.0);
         let detected_key_root = header.get_i32("detected_key_root").unwrap_or(255) as u8;
         let detected_key_minor = header.get_bool("detected_key_minor").unwrap_or(false);
@@ -919,7 +922,10 @@ mod tests {
         assert_eq!(relative, PathBuf::from("audio/vocals.wav"));
 
         let resolved = resolve_path(&relative, base);
-        assert_eq!(resolved, PathBuf::from("/home/user/projects/song/audio/vocals.wav"));
+        assert_eq!(
+            resolved,
+            PathBuf::from("/home/user/projects/song/audio/vocals.wav")
+        );
     }
 
     #[test]

@@ -32,8 +32,7 @@ const ZERO_LINE: Color32 = Color32::from_rgba_premultiplied(80, 80, 100, 100);
 /// currently visible in the main editor. Click to seek; drag to scroll.
 pub fn waveform_overview(ui: &mut egui::Ui, state: &mut AppState) {
     let available = ui.available_size();
-    let (response, painter) =
-        ui.allocate_painter(available, egui::Sense::click_and_drag());
+    let (response, painter) = ui.allocate_painter(available, egui::Sense::click_and_drag());
     let rect = response.rect;
 
     // Background
@@ -53,7 +52,10 @@ pub fn waveform_overview(ui: &mut egui::Ui, state: &mut AppState) {
     // Zero line
     let y_center = rect.center().y;
     painter.line_segment(
-        [Pos2::new(rect.left(), y_center), Pos2::new(rect.right(), y_center)],
+        [
+            Pos2::new(rect.left(), y_center),
+            Pos2::new(rect.right(), y_center),
+        ],
         Stroke::new(0.5_f32, ZERO_LINE),
     );
 
@@ -101,7 +103,10 @@ pub fn waveform_overview(ui: &mut egui::Ui, state: &mut AppState) {
     let cursor_x = time_to_overview_x(state.playback_position, rect, state.duration);
     if cursor_x >= rect.left() && cursor_x <= rect.right() {
         painter.line_segment(
-            [Pos2::new(cursor_x, rect.top()), Pos2::new(cursor_x, rect.bottom())],
+            [
+                Pos2::new(cursor_x, rect.top()),
+                Pos2::new(cursor_x, rect.bottom()),
+            ],
             Stroke::new(1.5_f32, CURSOR_COLOR),
         );
     }

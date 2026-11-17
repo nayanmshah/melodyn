@@ -81,7 +81,11 @@ impl AudioBuffer {
 
     /// Create a stereo buffer from two Vecs of samples.
     pub fn from_stereo(left: Vec<f64>, right: Vec<f64>, sample_rate: f64) -> Self {
-        assert_eq!(left.len(), right.len(), "Stereo channels must be same length");
+        assert_eq!(
+            left.len(),
+            right.len(),
+            "Stereo channels must be same length"
+        );
         let num_samples = left.len();
         Self {
             channels: vec![left, right],
@@ -113,19 +117,31 @@ impl AudioBuffer {
     }
 
     /// Create from interleaved i16 samples.
-    pub fn from_interleaved_i16(interleaved: &[i16], num_channels: usize, sample_rate: f64) -> Self {
+    pub fn from_interleaved_i16(
+        interleaved: &[i16],
+        num_channels: usize,
+        sample_rate: f64,
+    ) -> Self {
         let f64_samples: Vec<f64> = interleaved.iter().map(|&s| s as f64 / 32768.0).collect();
         Self::from_interleaved(&f64_samples, num_channels, sample_rate)
     }
 
     /// Create from interleaved i32 samples (24-bit in 32-bit container).
-    pub fn from_interleaved_i24(interleaved: &[i32], num_channels: usize, sample_rate: f64) -> Self {
+    pub fn from_interleaved_i24(
+        interleaved: &[i32],
+        num_channels: usize,
+        sample_rate: f64,
+    ) -> Self {
         let f64_samples: Vec<f64> = interleaved.iter().map(|&s| s as f64 / 8388608.0).collect();
         Self::from_interleaved(&f64_samples, num_channels, sample_rate)
     }
 
     /// Create from interleaved f32 samples.
-    pub fn from_interleaved_f32(interleaved: &[f32], num_channels: usize, sample_rate: f64) -> Self {
+    pub fn from_interleaved_f32(
+        interleaved: &[f32],
+        num_channels: usize,
+        sample_rate: f64,
+    ) -> Self {
         let f64_samples: Vec<f64> = interleaved.iter().map(|&s| s as f64).collect();
         Self::from_interleaved(&f64_samples, num_channels, sample_rate)
     }
@@ -188,13 +204,7 @@ impl AudioBuffer {
 
         let scale = 1.0 / self.num_channels as f64;
         (0..self.num_samples)
-            .map(|s| {
-                self.channels
-                    .iter()
-                    .map(|ch| ch[s])
-                    .sum::<f64>()
-                    * scale
-            })
+            .map(|s| self.channels.iter().map(|ch| ch[s]).sum::<f64>() * scale)
             .collect()
     }
 

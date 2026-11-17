@@ -171,7 +171,10 @@ impl AudioOutputStream {
         let supported_config = match device.default_output_config() {
             Ok(c) => c,
             Err(e) => {
-                log::warn!("Cannot get default output config: {} -- playback disabled", e);
+                log::warn!(
+                    "Cannot get default output config: {} -- playback disabled",
+                    e
+                );
                 return Self {
                     _stream: None,
                     ring_buffer,
@@ -196,7 +199,10 @@ impl AudioOutputStream {
             SampleFormat::I16 => Self::build_stream_i16(&device, &stream_config, rb, st),
             SampleFormat::U16 => Self::build_stream_u16(&device, &stream_config, rb, st),
             _ => {
-                log::warn!("Unsupported sample format {:?} -- playback disabled", sample_format);
+                log::warn!(
+                    "Unsupported sample format {:?} -- playback disabled",
+                    sample_format
+                );
                 None
             }
         };

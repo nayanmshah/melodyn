@@ -224,7 +224,10 @@ impl PitchDetector {
         // Compute amplitude (RMS of the frame)
         let rms = (frame.iter().map(|&s| s * s).sum::<f64>() / frame.len() as f64).sqrt();
 
-        if confidence >= self.config.min_confidence && freq >= self.config.min_freq && freq <= self.config.max_freq {
+        if confidence >= self.config.min_confidence
+            && freq >= self.config.min_freq
+            && freq <= self.config.max_freq
+        {
             Some(PitchCandidate {
                 frequency: freq,
                 midi_note: PitchCandidate::freq_to_midi(freq),
@@ -242,7 +245,12 @@ impl PitchDetector {
     ///
     /// Multiplies downsampled versions of the magnitude spectrum to reinforce
     /// the fundamental frequency.
-    pub fn detect_hps(&self, magnitude: &[f64], sample_rate: f64, fft_size: usize) -> Option<PitchCandidate> {
+    pub fn detect_hps(
+        &self,
+        magnitude: &[f64],
+        sample_rate: f64,
+        fft_size: usize,
+    ) -> Option<PitchCandidate> {
         let num_bins = magnitude.len();
         let min_bin = (self.config.min_freq * fft_size as f64 / sample_rate).ceil() as usize;
         let max_bin = (self.config.max_freq * fft_size as f64 / sample_rate)
@@ -371,8 +379,7 @@ impl PitchDetector {
             let mut yin_result = self.detect_yin(frame);
 
             // Run HPS as cross-check
-            let hps_result =
-                self.detect_hps(&slice.magnitude, sr, slice.fft_size);
+            let hps_result = self.detect_hps(&slice.magnitude, sr, slice.fft_size);
 
             // Combine: prefer YIN if confident, fall back to HPS
             let candidate = match (&mut yin_result, &hps_result) {
@@ -431,9 +438,7 @@ impl PitchDetector {
             let mut candidates = Vec::new();
 
             for _ in 0..self.max_polyphony() {
-                if let Some(mut cand) =
-                    self.detect_hps(&residual_mag, sr, slice.fft_size)
-                {
+                if let Some(mut cand) = self.detect_hps(&residual_mag, sr, slice.fft_size) {
                     cand.frame_index = i;
                     cand.time = slice.time_seconds;
 
@@ -668,15 +673,9 @@ impl NoteAccumulator {
 
     fn to_note(&self, hop_size: usize, sample_rate: f64) -> DetectedNote {
         let freq = self.avg_frequency();
-        let avg_confidence =
-            self.confidences.iter().sum::<f64>() / self.confidences.len() as f64;
-        let peak_amplitude = self
-            .amplitudes
-            .iter()
-            .copied()
-            .fold(0.0f64, f64::max);
-        let avg_amplitude =
-            self.amplitudes.iter().sum::<f64>() / self.amplitudes.len() as f64;
+        let avg_confidence = self.confidences.iter().sum::<f64>() / self.confidences.len() as f64;
+        let peak_amplitude = self.amplitudes.iter().copied().fold(0.0f64, f64::max);
+        let avg_amplitude = self.amplitudes.iter().sum::<f64>() / self.amplitudes.len() as f64;
 
         let num_frames = self.end_frame - self.start_frame + 1;
         let duration = num_frames as f64 * hop_size as f64 / sample_rate;
@@ -695,8 +694,8 @@ impl NoteAccumulator {
             amplitude_contour: self.amplitudes.clone(),
             vibrato_rate: estimate_vibrato_rate(&self.frequencies, sample_rate, hop_size),
             vibrato_depth: estimate_vibrato_depth(&self.frequencies),
-            attack_time: 0.0,   // Computed later in note.rs
-            release_time: 0.0,  // Computed later in note.rs
+            attack_time: 0.0,  // Computed later in note.rs
+            release_time: 0.0, // Computed later in note.rs
         }
     }
 }
@@ -752,7 +751,8 @@ fn estimate_vibrato_depth(freqs: &[f64]) -> f64 {
 
     // Depth = standard deviation of cents
     let mean_cents = cents.iter().sum::<f64>() / cents.len() as f64;
-    let variance = cents.iter().map(|&c| (c - mean_cents).powi(2)).sum::<f64>() / cents.len() as f64;
+    let variance =
+        cents.iter().map(|&c| (c - mean_cents).powi(2)).sum::<f64>() / cents.len() as f64;
     variance.sqrt()
 }
 
@@ -813,7 +813,11 @@ mod tests {
             freq,
             p.frequency
         );
-        assert!(p.confidence > 0.5, "Confidence {} should be high", p.confidence);
+        assert!(
+            p.confidence > 0.5,
+            "Confidence {} should be high",
+            p.confidence
+        );
     }
 
     #[test]

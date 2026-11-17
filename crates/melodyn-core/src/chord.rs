@@ -184,13 +184,15 @@ impl ChordFormatter {
     pub fn format_root(&self, root: PitchClass) -> &'static str {
         match self.accidental_style {
             AccidentalStyle::Sharp => {
-                const NAMES: [&str; 12] =
-                    ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+                const NAMES: [&str; 12] = [
+                    "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B",
+                ];
                 NAMES[root as usize % 12]
             }
             AccidentalStyle::Flat => {
-                const NAMES: [&str; 12] =
-                    ["C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"];
+                const NAMES: [&str; 12] = [
+                    "C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B",
+                ];
                 NAMES[root as usize % 12]
             }
         }
@@ -489,15 +491,8 @@ impl ChordSequence {
 
     /// Total duration of the sequence.
     pub fn duration(&self) -> f64 {
-        self.entries
-            .last()
-            .map(|e| e.end_time)
-            .unwrap_or(0.0)
-            - self
-                .entries
-                .first()
-                .map(|e| e.start_time)
-                .unwrap_or(0.0)
+        self.entries.last().map(|e| e.end_time).unwrap_or(0.0)
+            - self.entries.first().map(|e| e.start_time).unwrap_or(0.0)
     }
 }
 
@@ -574,15 +569,13 @@ impl ChordAnalyzer {
                 let mut candidates = ChordTypeAnalyzer::analyze(&pc_set);
 
                 // Refine root using bass-note heuristic.
-                let active_owned: Vec<DetectedNote> =
-                    active.iter().map(|n| (*n).clone()).collect();
+                let active_owned: Vec<DetectedNote> = active.iter().map(|n| (*n).clone()).collect();
                 if let Some(root) = ChordRootAnalyzer::analyze_root(&active_owned) {
                     // Boost candidates whose root matches.
                     for c in &mut candidates {
                         if c.description.root == root {
                             c.total_score += 0.3;
-                            c.description.confidence =
-                                (c.description.confidence + 0.15).min(1.0);
+                            c.description.confidence = (c.description.confidence + 0.15).min(1.0);
                         }
                     }
                     candidates.sort_by(|a, b| {
@@ -851,9 +844,9 @@ mod tests {
     #[test]
     fn test_chord_type_detection_minor() {
         let mut pcs = [false; 12];
-        pcs[9] = true;  // A
-        pcs[0] = true;  // C
-        pcs[4] = true;  // E
+        pcs[9] = true; // A
+        pcs[0] = true; // C
+        pcs[4] = true; // E
         let candidates = ChordTypeAnalyzer::analyze(&pcs);
         assert!(!candidates.is_empty());
         // Should find Am among the top candidates
@@ -866,10 +859,10 @@ mod tests {
     #[test]
     fn test_chord_type_detection_dom7() {
         let mut pcs = [false; 12];
-        pcs[7] = true;  // G
+        pcs[7] = true; // G
         pcs[11] = true; // B
-        pcs[2] = true;  // D
-        pcs[5] = true;  // F
+        pcs[2] = true; // D
+        pcs[5] = true; // F
         let candidates = ChordTypeAnalyzer::analyze(&pcs);
         let g7 = candidates
             .iter()
@@ -986,9 +979,9 @@ mod tests {
             confidence: 1.0,
         };
         let pcs = desc.pitch_classes();
-        assert!(pcs.contains(&0));  // C
-        assert!(pcs.contains(&4));  // E
-        assert!(pcs.contains(&7));  // G
+        assert!(pcs.contains(&0)); // C
+        assert!(pcs.contains(&4)); // E
+        assert!(pcs.contains(&7)); // G
         assert!(pcs.contains(&10)); // Bb
     }
 }

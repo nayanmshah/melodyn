@@ -687,11 +687,7 @@ impl Document {
     }
 
     /// Remove an element from a track.
-    pub fn remove_element(
-        &mut self,
-        track_id: ObjectId,
-        element_id: ObjectId,
-    ) -> Option<Element> {
+    pub fn remove_element(&mut self, track_id: ObjectId, element_id: ObjectId) -> Option<Element> {
         self.selection.deselect_element(element_id);
         self.modified = true;
         if let Some(track) = self.track_mut(track_id) {
@@ -910,7 +906,7 @@ mod tests {
     #[test]
     fn test_composition_measure_duration() {
         let comp = Composition::default(); // 4/4 at 120 BPM
-        // 4 beats * 0.5 sec/beat = 2 seconds
+                                           // 4 beats * 0.5 sec/beat = 2 seconds
         assert!((comp.measure_duration() - 2.0).abs() < 1e-10);
     }
 
@@ -943,13 +939,25 @@ mod tests {
         let cmd = Box::new(MoveElementCommand::new(track_id, elem_id, 2.0));
         undo.execute(cmd, &mut doc);
         assert!(
-            (doc.track(track_id).unwrap().element(elem_id).unwrap().time_offset - 2.0).abs()
+            (doc.track(track_id)
+                .unwrap()
+                .element(elem_id)
+                .unwrap()
+                .time_offset
+                - 2.0)
+                .abs()
                 < 1e-10
         );
 
         undo.undo(&mut doc);
         assert!(
-            (doc.track(track_id).unwrap().element(elem_id).unwrap().time_offset - 0.0).abs()
+            (doc.track(track_id)
+                .unwrap()
+                .element(elem_id)
+                .unwrap()
+                .time_offset
+                - 0.0)
+                .abs()
                 < 1e-10
         );
     }

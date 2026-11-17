@@ -67,13 +67,13 @@ pub use tempo::{
     BarSignature, BeatGrid, TempoAnalysisResult, TempoAnalyzer, TempoAnalyzerConfig, TempoPeriod,
 };
 
-pub use separation::{
-    HpssConfig, HpssResult, NmfConfig, NmfCostFunction, NmfInitialization, NmfResult,
-    SpectralSubtractionConfig, SpectralSubtractionResult,
-};
 pub use multimic::{
     BeamformerConfig, MultichannelWienerConfig, MultichannelWienerResult, SpatialClusterConfig,
     SpatialClusterResult, TdoaConfig, TdoaResult,
+};
+pub use separation::{
+    HpssConfig, HpssResult, NmfConfig, NmfCostFunction, NmfInitialization, NmfResult,
+    SpectralSubtractionConfig, SpectralSubtractionResult,
 };
 pub use vocal_isolation::{
     CenterExtractionResult, SeparationQuality, SpectralMask, VocalIsolationConfig,

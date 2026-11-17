@@ -634,9 +634,6 @@ mod tests {
 
         // There should be at least one onset detected near the midpoint
         let onsets: Vec<_> = slices.iter().filter(|s| s.transiency.is_onset).collect();
-        assert!(
-            !onsets.is_empty(),
-            "Should detect at least one onset"
-        );
+        assert!(!onsets.is_empty(), "Should detect at least one onset");
     }
 }

@@ -198,7 +198,10 @@ fn chord_coverage_penalty(mappings: &[NoteMapping], chord: &ChordDescription) ->
 
 /// Penalty for multiple voices on the same pitch.
 fn double_count_penalty(mappings: &[NoteMapping]) -> f64 {
-    let mut rounded: Vec<i32> = mappings.iter().map(|m| m.mapped_midi.round() as i32).collect();
+    let mut rounded: Vec<i32> = mappings
+        .iter()
+        .map(|m| m.mapped_midi.round() as i32)
+        .collect();
     rounded.sort();
     let total = rounded.len();
     rounded.dedup();
@@ -332,7 +335,11 @@ fn transposition_penalty(mappings: &[NoteMapping]) -> f64 {
     }
     let shifts: Vec<f64> = mappings.iter().map(|m| m.shift()).collect();
     let mean_shift = shifts.iter().sum::<f64>() / shifts.len() as f64;
-    let variance = shifts.iter().map(|&s| (s - mean_shift).powi(2)).sum::<f64>() / shifts.len() as f64;
+    let variance = shifts
+        .iter()
+        .map(|&s| (s - mean_shift).powi(2))
+        .sum::<f64>()
+        / shifts.len() as f64;
     (variance.sqrt() / 12.0).min(1.0)
 }
 
@@ -393,7 +400,8 @@ fn total_penalty(mappings: &[NoteMapping], config: &PitchMapperConfig) -> f64 {
         penalty += config.transposition.weight * transposition_penalty(mappings);
     }
     if config.exceeds_limits.enabled {
-        penalty += config.exceeds_limits.weight * exceeds_limits_penalty(mappings, config.voice_range);
+        penalty +=
+            config.exceeds_limits.weight * exceeds_limits_penalty(mappings, config.voice_range);
     }
 
     penalty
@@ -614,7 +622,9 @@ impl PitchRunMapper {
                 let mut best_iv = 0u8;
                 let mut best_dist = 12u8;
                 for &iv in intervals {
-                    let dist = (rel as i8 - iv as i8).unsigned_abs().min(12 - (rel as i8 - iv as i8).unsigned_abs());
+                    let dist = (rel as i8 - iv as i8)
+                        .unsigned_abs()
+                        .min(12 - (rel as i8 - iv as i8).unsigned_abs());
                     if dist < best_dist {
                         best_dist = dist;
                         best_iv = iv;
@@ -793,10 +803,12 @@ impl VoiceMapper {
                 }
             }
 
-            let voice = best_pi.map(|pi| {
-                used_prev[pi] = true;
-                prev[pi].voice
-            }).unwrap_or(ci);
+            let voice = best_pi
+                .map(|pi| {
+                    used_prev[pi] = true;
+                    prev[pi].voice
+                })
+                .unwrap_or(ci);
 
             mappings.push(NoteMapping {
                 note_index: ci,
@@ -883,11 +895,7 @@ impl PitchMapper {
     }
 
     /// Map notes to a target scale.
-    pub fn map_to_scale(
-        &self,
-        notes: &[DetectedNote],
-        scale: &CandidateScale,
-    ) -> Vec<NoteMapping> {
+    pub fn map_to_scale(&self, notes: &[DetectedNote], scale: &CandidateScale) -> Vec<NoteMapping> {
         let intervals = match scale.mode.intervals() {
             Some(iv) => iv,
             None => {
@@ -1087,16 +1095,46 @@ mod tests {
 
         // All chord tones covered
         let full = vec![
-            NoteMapping { note_index: 0, original_midi: 60.0, mapped_midi: 60.0, voice: 0, quality: 1.0 },
-            NoteMapping { note_index: 1, original_midi: 64.0, mapped_midi: 64.0, voice: 1, quality: 1.0 },
-            NoteMapping { note_index: 2, original_midi: 67.0, mapped_midi: 67.0, voice: 2, quality: 1.0 },
+            NoteMapping {
+                note_index: 0,
+                original_midi: 60.0,
+                mapped_midi: 60.0,
+                voice: 0,
+                quality: 1.0,
+            },
+            NoteMapping {
+                note_index: 1,
+                original_midi: 64.0,
+                mapped_midi: 64.0,
+                voice: 1,
+                quality: 1.0,
+            },
+            NoteMapping {
+                note_index: 2,
+                original_midi: 67.0,
+                mapped_midi: 67.0,
+                voice: 2,
+                quality: 1.0,
+            },
         ];
         assert!(chord_coverage_penalty(&full, &chord) < 0.01);
 
         // Missing the fifth
         let partial = vec![
-            NoteMapping { note_index: 0, original_midi: 60.0, mapped_midi: 60.0, voice: 0, quality: 1.0 },
-            NoteMapping { note_index: 1, original_midi: 64.0, mapped_midi: 64.0, voice: 1, quality: 1.0 },
+            NoteMapping {
+                note_index: 0,
+                original_midi: 60.0,
+                mapped_midi: 60.0,
+                voice: 0,
+                quality: 1.0,
+            },
+            NoteMapping {
+                note_index: 1,
+                original_midi: 64.0,
+                mapped_midi: 64.0,
+                voice: 1,
+                quality: 1.0,
+            },
         ];
         assert!(chord_coverage_penalty(&partial, &chord) > 0.2);
     }
@@ -1177,14 +1215,22 @@ mod tests {
 
     #[test]
     fn test_exceeds_limits_penalty() {
-        let in_range = vec![
-            NoteMapping { note_index: 0, original_midi: 60.0, mapped_midi: 60.0, voice: 0, quality: 1.0 },
-        ];
+        let in_range = vec![NoteMapping {
+            note_index: 0,
+            original_midi: 60.0,
+            mapped_midi: 60.0,
+            voice: 0,
+            quality: 1.0,
+        }];
         assert!(exceeds_limits_penalty(&in_range, (36.0, 96.0)) < 0.01);
 
-        let out_of_range = vec![
-            NoteMapping { note_index: 0, original_midi: 60.0, mapped_midi: 20.0, voice: 0, quality: 1.0 },
-        ];
+        let out_of_range = vec![NoteMapping {
+            note_index: 0,
+            original_midi: 60.0,
+            mapped_midi: 20.0,
+            voice: 0,
+            quality: 1.0,
+        }];
         assert!(exceeds_limits_penalty(&out_of_range, (36.0, 96.0)) > 0.5);
     }
 
@@ -1229,9 +1275,27 @@ mod tests {
     #[test]
     fn test_approach_analysis() {
         let mappings = vec![
-            NoteMapping { note_index: 0, original_midi: 60.0, mapped_midi: 60.0, voice: 0, quality: 1.0 },
-            NoteMapping { note_index: 1, original_midi: 62.0, mapped_midi: 62.0, voice: 0, quality: 1.0 },
-            NoteMapping { note_index: 2, original_midi: 72.0, mapped_midi: 72.0, voice: 0, quality: 1.0 },
+            NoteMapping {
+                note_index: 0,
+                original_midi: 60.0,
+                mapped_midi: 60.0,
+                voice: 0,
+                quality: 1.0,
+            },
+            NoteMapping {
+                note_index: 1,
+                original_midi: 62.0,
+                mapped_midi: 62.0,
+                voice: 0,
+                quality: 1.0,
+            },
+            NoteMapping {
+                note_index: 2,
+                original_midi: 72.0,
+                mapped_midi: 72.0,
+                voice: 0,
+                quality: 1.0,
+            },
         ];
         let approaches = PitchApproachMapper::analyze_approaches(&mappings, ApproachType::Slide);
         assert_eq!(approaches.len(), 2);

@@ -171,9 +171,7 @@ impl PlaybackEngine {
 
     /// Set loop parameters (called from the UI thread).
     pub fn set_loop(&self, enabled: bool, start_seconds: f64, end_seconds: f64) {
-        self.loop_state
-            .enabled
-            .store(enabled, Ordering::Release);
+        self.loop_state.enabled.store(enabled, Ordering::Release);
         self.loop_state
             .start_samples
             .store((start_seconds * self.sample_rate) as u64, Ordering::Release);
@@ -268,9 +266,7 @@ impl PlaybackEngine {
             let loop_len = loop_end - loop_start;
             read_pos = loop_start + (read_pos - loop_start) % loop_len;
             // Update the atomic position so the UI cursor stays in sync
-            self.output
-                .state
-                .set_position(read_pos as u64);
+            self.output.state.set_position(read_pos as u64);
         }
 
         // Check if we've reached the end
@@ -461,7 +457,10 @@ mod tests {
             .iter()
             .map(|s| s * s)
             .sum();
-        assert!(energy > 0.01, "Passthrough render should produce non-silent audio");
+        assert!(
+            energy > 0.01,
+            "Passthrough render should produce non-silent audio"
+        );
     }
 
     #[test]

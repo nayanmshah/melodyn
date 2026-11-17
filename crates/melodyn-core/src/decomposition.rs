@@ -267,8 +267,8 @@ impl AudioDecomposer {
 
         // Modulate by transiency: onset frames push energy toward consonants
         if is_onset && transiency_score > self.config.consonant_transiency_threshold {
-            let onset_boost = (transiency_score - self.config.consonant_transiency_threshold)
-                .min(0.5);
+            let onset_boost =
+                (transiency_score - self.config.consonant_transiency_threshold).min(0.5);
             weights[DecompositionComponent::Consonants as usize] += onset_boost;
             // Reduce tonal proportionally
             weights[DecompositionComponent::Tonal as usize] =
@@ -303,7 +303,9 @@ mod tests {
     use std::f64::consts::PI;
 
     fn sine_wave(freq: f64, sr: f64, n: usize) -> Vec<f64> {
-        (0..n).map(|i| (2.0 * PI * freq * i as f64 / sr).sin()).collect()
+        (0..n)
+            .map(|i| (2.0 * PI * freq * i as f64 / sr).sin())
+            .collect()
     }
 
     #[test]

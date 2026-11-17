@@ -434,7 +434,10 @@ mod tests {
         // Redo should produce forward: move pitch up 2.
         let forward = mgr.redo().unwrap();
         assert_eq!(forward.len(), 1);
-        if let EditOp::MovePitch { delta_semitones, .. } = &forward[0] {
+        if let EditOp::MovePitch {
+            delta_semitones, ..
+        } = &forward[0]
+        {
             assert!((*delta_semitones - 2.0).abs() < 1e-10);
         }
 
@@ -465,7 +468,11 @@ mod tests {
         let inverse = mgr.undo().unwrap();
         assert_eq!(inverse.len(), 3);
         // Reversed: note 3, 2, 1.
-        if let EditOp::MovePitch { note_id, delta_semitones } = &inverse[0] {
+        if let EditOp::MovePitch {
+            note_id,
+            delta_semitones,
+        } = &inverse[0]
+        {
             assert_eq!(*note_id, 3);
             assert!((*delta_semitones - (-3.0)).abs() < 1e-10);
         }
@@ -520,7 +527,10 @@ mod tests {
     fn test_set_max_depth_truncates() {
         let mut mgr = EnhancedUndoManager::new(10);
         for i in 0..5 {
-            mgr.add_edit(&format!("Step {i}"), UndoableEdit::move_pitch(i as u64, 1.0));
+            mgr.add_edit(
+                &format!("Step {i}"),
+                UndoableEdit::move_pitch(i as u64, 1.0),
+            );
         }
         assert_eq!(mgr.undo_depth(), 5);
 

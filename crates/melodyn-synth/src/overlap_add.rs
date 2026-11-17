@@ -70,8 +70,7 @@ impl OverlapAddConfig {
             let window_idx = self.window_size / 2;
             if let Some(idx) = window_idx.checked_sub(offset) {
                 if idx < self.synthesis_window.len() {
-                    sum_at_center +=
-                        self.analysis_window[idx] * self.synthesis_window[idx];
+                    sum_at_center += self.analysis_window[idx] * self.synthesis_window[idx];
                 }
             }
         }
@@ -207,8 +206,7 @@ impl OverlapAddProcessor {
             return vec![];
         }
 
-        let num_output_frames =
-            ((frames.len() as f64) * stretch_factor).ceil() as usize;
+        let num_output_frames = ((frames.len() as f64) * stretch_factor).ceil() as usize;
         let mut stretched_frames = Vec::with_capacity(num_output_frames);
 
         for i in 0..num_output_frames {

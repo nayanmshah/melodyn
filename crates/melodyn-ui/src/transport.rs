@@ -92,7 +92,10 @@ pub fn transport_bar(ui: &mut egui::Ui, state: &mut AppState) {
         } else {
             "Loop: OFF"
         };
-        if ui.selectable_label(state.loop_enabled, loop_label).clicked() {
+        if ui
+            .selectable_label(state.loop_enabled, loop_label)
+            .clicked()
+        {
             state.loop_enabled = !state.loop_enabled;
         }
 

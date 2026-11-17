@@ -161,7 +161,9 @@ pub struct ElementRenderer {
 impl ElementRenderer {
     /// Create a new element renderer for the given number of harmonics.
     pub fn new(max_harmonics: usize, ola_config: OverlapAddConfig) -> Self {
-        let component_renderers = (0..max_harmonics).map(|_| ComponentRenderer::new()).collect();
+        let component_renderers = (0..max_harmonics)
+            .map(|_| ComponentRenderer::new())
+            .collect();
         Self {
             component_renderers,
             ola_config,
@@ -369,13 +371,17 @@ mod tests {
         partial.active = true;
 
         let mut output = vec![0.0f64; 1024];
-        cr.render_frame(&partial, &FrameRenderParams {
-            frame_index: 0,
-            frequency: 440.0,
-            sample_rate: 44100.0,
-            hop_size: 256,
-            output_offset: 0,
-        }, &mut output);
+        cr.render_frame(
+            &partial,
+            &FrameRenderParams {
+                frame_index: 0,
+                frequency: 440.0,
+                sample_rate: 44100.0,
+                hop_size: 256,
+                output_offset: 0,
+            },
+            &mut output,
+        );
 
         // Should produce non-zero output
         let energy: f64 = output[..256].iter().map(|s| s * s).sum();
@@ -399,7 +405,10 @@ mod tests {
 
         assert!(!audio.is_empty());
         let rms = (audio.iter().map(|s| s * s).sum::<f64>() / audio.len() as f64).sqrt();
-        assert!(rms > 0.001, "Element renderer should produce audible output");
+        assert!(
+            rms > 0.001,
+            "Element renderer should produce audible output"
+        );
     }
 
     #[test]

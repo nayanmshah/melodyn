@@ -46,7 +46,10 @@ pub type AuthorId = String;
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum EditOp {
     /// Shift a note's pitch by the given number of semitones.
-    MovePitch { note_id: NoteId, delta_semitones: f64 },
+    MovePitch {
+        note_id: NoteId,
+        delta_semitones: f64,
+    },
     /// Shift a note's time position by the given number of seconds.
     MoveTime { note_id: NoteId, delta_seconds: f64 },
     /// Set a note's amplitude to an absolute value.
@@ -97,14 +100,12 @@ impl EditOp {
             // Tempo/scale ops don't conflict with note ops.
             // Two tempo ops at the same position do conflict.
             return match (self, other) {
-                (
-                    Self::SetTempo { position: p1, .. },
-                    Self::SetTempo { position: p2, .. },
-                ) => (p1 - p2).abs() < 1e-6,
-                (
-                    Self::SetScale { position: p1, .. },
-                    Self::SetScale { position: p2, .. },
-                ) => (p1 - p2).abs() < 1e-6,
+                (Self::SetTempo { position: p1, .. }, Self::SetTempo { position: p2, .. }) => {
+                    (p1 - p2).abs() < 1e-6
+                }
+                (Self::SetScale { position: p1, .. }, Self::SetScale { position: p2, .. }) => {
+                    (p1 - p2).abs() < 1e-6
+                }
                 _ => false,
             };
         }
@@ -236,8 +237,13 @@ pub fn transform(op: &EditOp, against: &EditOp) -> EditOp {
     match (op, against) {
         // Both move pitch on the same note: accumulate deltas.
         (
-            EditOp::MovePitch { note_id, delta_semitones },
-            EditOp::MovePitch { note_id: other_id, .. },
+            EditOp::MovePitch {
+                note_id,
+                delta_semitones,
+            },
+            EditOp::MovePitch {
+                note_id: other_id, ..
+            },
         ) if note_id == other_id => {
             // The other move has already been applied, so our move is still relative.
             // Keep our original delta (it's additive).
@@ -249,8 +255,13 @@ pub fn transform(op: &EditOp, against: &EditOp) -> EditOp {
 
         // Both move time on the same note: keep our delta (additive).
         (
-            EditOp::MoveTime { note_id, delta_seconds },
-            EditOp::MoveTime { note_id: other_id, .. },
+            EditOp::MoveTime {
+                note_id,
+                delta_seconds,
+            },
+            EditOp::MoveTime {
+                note_id: other_id, ..
+            },
         ) if note_id == other_id => EditOp::MoveTime {
             note_id: *note_id,
             delta_seconds: *delta_seconds,
@@ -259,7 +270,9 @@ pub fn transform(op: &EditOp, against: &EditOp) -> EditOp {
         // Last-writer-wins for absolute-value operations on the same note.
         (
             EditOp::SetAmplitude { note_id, amplitude },
-            EditOp::SetAmplitude { note_id: other_id, .. },
+            EditOp::SetAmplitude {
+                note_id: other_id, ..
+            },
         ) if note_id == other_id => {
             // Our value wins (we are the later writer in this transform direction).
             EditOp::SetAmplitude {
@@ -270,16 +283,21 @@ pub fn transform(op: &EditOp, against: &EditOp) -> EditOp {
 
         (
             EditOp::SetFormant { note_id, shift },
-            EditOp::SetFormant { note_id: other_id, .. },
+            EditOp::SetFormant {
+                note_id: other_id, ..
+            },
         ) if note_id == other_id => EditOp::SetFormant {
             note_id: *note_id,
             shift: *shift,
         },
 
         // If the other operation deleted the note we're editing, our edit becomes a no-op.
-        (_, EditOp::DeleteNote { note_id: deleted_id })
-            if op.target_note_ids().contains(deleted_id) =>
-        {
+        (
+            _,
+            EditOp::DeleteNote {
+                note_id: deleted_id,
+            },
+        ) if op.target_note_ids().contains(deleted_id) => {
             // Convert to a no-op by keeping the same shape but zeroing the effect.
             match op {
                 EditOp::MovePitch { note_id, .. } => EditOp::MovePitch {
@@ -311,19 +329,13 @@ pub fn transform(op: &EditOp, against: &EditOp) -> EditOp {
         }
 
         // Two tempo sets at the same position: last-writer-wins.
-        (
-            EditOp::SetTempo { position, bpm },
-            EditOp::SetTempo { .. },
-        ) => EditOp::SetTempo {
+        (EditOp::SetTempo { position, bpm }, EditOp::SetTempo { .. }) => EditOp::SetTempo {
             position: *position,
             bpm: *bpm,
         },
 
         // Two scale sets at the same position: last-writer-wins.
-        (
-            EditOp::SetScale { position, scale },
-            EditOp::SetScale { .. },
-        ) => EditOp::SetScale {
+        (EditOp::SetScale { position, scale }, EditOp::SetScale { .. }) => EditOp::SetScale {
             position: *position,
             scale: scale.clone(),
         },
@@ -368,10 +380,7 @@ pub enum ConflictResolution {
 
 /// Resolve conflicts between a local pending operation and a remote confirmed operation.
 /// Returns the conflict description and the transformed local operation.
-pub fn resolve_conflict(
-    local: &EditOperation,
-    remote: &EditOperation,
-) -> (Conflict, EditOp) {
+pub fn resolve_conflict(local: &EditOperation, remote: &EditOperation) -> (Conflict, EditOp) {
     let transformed = transform(&local.op, &remote.op);
     let resolution = determine_resolution(&local.op, &remote.op, &transformed);
     let conflict = Conflict {
@@ -389,7 +398,11 @@ fn determine_resolution(
 ) -> ConflictResolution {
     // If the target was deleted by remote, local is dropped.
     if let EditOp::DeleteNote { .. } = remote {
-        if local.target_note_ids().iter().any(|id| remote.target_note_ids().contains(id)) {
+        if local
+            .target_note_ids()
+            .iter()
+            .any(|id| remote.target_note_ids().contains(id))
+        {
             return ConflictResolution::LocalDropped;
         }
     }
@@ -589,8 +602,8 @@ impl EditSession {
 
     /// Restore a session from JSON.
     pub fn from_json(json: &str) -> CollabResult<Self> {
-        let state: SessionState =
-            serde_json::from_str(json).map_err(|e| CollabError::SerializationError(e.to_string()))?;
+        let state: SessionState = serde_json::from_str(json)
+            .map_err(|e| CollabError::SerializationError(e.to_string()))?;
         Ok(Self {
             author: state.author,
             last_confirmed_op_id: state.last_confirmed_op_id,
@@ -634,16 +647,44 @@ mod tests {
     #[test]
     fn test_edit_op_serialization_roundtrip() {
         let ops = vec![
-            EditOp::MovePitch { note_id: 1, delta_semitones: 2.5 },
-            EditOp::MoveTime { note_id: 2, delta_seconds: -0.1 },
-            EditOp::SetAmplitude { note_id: 3, amplitude: 0.8 },
-            EditOp::SetFormant { note_id: 4, shift: 1.5 },
-            EditOp::SplitNote { note_id: 5, split_time: 0.3 },
-            EditOp::MergeNotes { note_ids: vec![6, 7, 8] },
+            EditOp::MovePitch {
+                note_id: 1,
+                delta_semitones: 2.5,
+            },
+            EditOp::MoveTime {
+                note_id: 2,
+                delta_seconds: -0.1,
+            },
+            EditOp::SetAmplitude {
+                note_id: 3,
+                amplitude: 0.8,
+            },
+            EditOp::SetFormant {
+                note_id: 4,
+                shift: 1.5,
+            },
+            EditOp::SplitNote {
+                note_id: 5,
+                split_time: 0.3,
+            },
+            EditOp::MergeNotes {
+                note_ids: vec![6, 7, 8],
+            },
             EditOp::DeleteNote { note_id: 9 },
-            EditOp::CreateNote { note_id: 10, pitch: 440.0, time: 1.0, duration: 0.5 },
-            EditOp::SetTempo { position: 0.0, bpm: 120.0 },
-            EditOp::SetScale { position: 0.0, scale: "C major".to_string() },
+            EditOp::CreateNote {
+                note_id: 10,
+                pitch: 440.0,
+                time: 1.0,
+                duration: 0.5,
+            },
+            EditOp::SetTempo {
+                position: 0.0,
+                bpm: 120.0,
+            },
+            EditOp::SetScale {
+                position: 0.0,
+                scale: "C major".to_string(),
+            },
         ];
 
         for op in &ops {
@@ -657,7 +698,10 @@ mod tests {
     fn test_edit_operation_serialization() {
         let operation = make_op(
             1,
-            EditOp::MovePitch { note_id: 42, delta_semitones: 3.0 },
+            EditOp::MovePitch {
+                note_id: 42,
+                delta_semitones: 3.0,
+            },
             "alice",
         );
         let json = serde_json::to_string(&operation).unwrap();
@@ -675,17 +719,26 @@ mod tests {
         assert!(log.is_empty());
 
         let id1 = log.append(
-            EditOp::MovePitch { note_id: 1, delta_semitones: 2.0 },
+            EditOp::MovePitch {
+                note_id: 1,
+                delta_semitones: 2.0,
+            },
             "alice".to_string(),
             1000,
         );
         let id2 = log.append(
-            EditOp::MoveTime { note_id: 1, delta_seconds: 0.1 },
+            EditOp::MoveTime {
+                note_id: 1,
+                delta_seconds: 0.1,
+            },
             "bob".to_string(),
             2000,
         );
         let id3 = log.append(
-            EditOp::SetAmplitude { note_id: 2, amplitude: 0.5 },
+            EditOp::SetAmplitude {
+                note_id: 2,
+                amplitude: 0.5,
+            },
             "alice".to_string(),
             3000,
         );
@@ -716,8 +769,14 @@ mod tests {
 
     #[test]
     fn test_transform_non_conflicting_independent() {
-        let op_a = EditOp::MovePitch { note_id: 1, delta_semitones: 2.0 };
-        let op_b = EditOp::MovePitch { note_id: 2, delta_semitones: -1.0 };
+        let op_a = EditOp::MovePitch {
+            note_id: 1,
+            delta_semitones: 2.0,
+        };
+        let op_b = EditOp::MovePitch {
+            note_id: 2,
+            delta_semitones: -1.0,
+        };
 
         // Different notes: no conflict.
         let transformed = transform(&op_a, &op_b);
@@ -726,8 +785,14 @@ mod tests {
 
     #[test]
     fn test_transform_concurrent_pitch_moves_same_note() {
-        let op_a = EditOp::MovePitch { note_id: 1, delta_semitones: 2.0 };
-        let op_b = EditOp::MovePitch { note_id: 1, delta_semitones: 3.0 };
+        let op_a = EditOp::MovePitch {
+            note_id: 1,
+            delta_semitones: 2.0,
+        };
+        let op_b = EditOp::MovePitch {
+            note_id: 1,
+            delta_semitones: 3.0,
+        };
 
         // Both move the same note. After B is applied, A should still apply its delta.
         let a_prime = transform(&op_a, &op_b);
@@ -736,12 +801,18 @@ mod tests {
         // Both produce additive results:
         // State + B + A' should equal State + A + B'
         // With additive semantics: total shift = 2 + 3 = 5 regardless of order.
-        if let EditOp::MovePitch { delta_semitones, .. } = a_prime {
+        if let EditOp::MovePitch {
+            delta_semitones, ..
+        } = a_prime
+        {
             assert!((delta_semitones - 2.0).abs() < 1e-10);
         } else {
             panic!("Expected MovePitch");
         }
-        if let EditOp::MovePitch { delta_semitones, .. } = b_prime {
+        if let EditOp::MovePitch {
+            delta_semitones, ..
+        } = b_prime
+        {
             assert!((delta_semitones - 3.0).abs() < 1e-10);
         } else {
             panic!("Expected MovePitch");
@@ -750,8 +821,14 @@ mod tests {
 
     #[test]
     fn test_transform_concurrent_time_moves_same_note() {
-        let op_a = EditOp::MoveTime { note_id: 5, delta_seconds: 0.1 };
-        let op_b = EditOp::MoveTime { note_id: 5, delta_seconds: -0.2 };
+        let op_a = EditOp::MoveTime {
+            note_id: 5,
+            delta_seconds: 0.1,
+        };
+        let op_b = EditOp::MoveTime {
+            note_id: 5,
+            delta_seconds: -0.2,
+        };
 
         let a_prime = transform(&op_a, &op_b);
         if let EditOp::MoveTime { delta_seconds, .. } = a_prime {
@@ -763,8 +840,14 @@ mod tests {
 
     #[test]
     fn test_transform_set_amplitude_last_writer_wins() {
-        let op_a = EditOp::SetAmplitude { note_id: 1, amplitude: 0.3 };
-        let op_b = EditOp::SetAmplitude { note_id: 1, amplitude: 0.7 };
+        let op_a = EditOp::SetAmplitude {
+            note_id: 1,
+            amplitude: 0.3,
+        };
+        let op_b = EditOp::SetAmplitude {
+            note_id: 1,
+            amplitude: 0.7,
+        };
 
         // Transform A against B: A is the "later" writer, so A's value is kept.
         let a_prime = transform(&op_a, &op_b);
@@ -777,12 +860,18 @@ mod tests {
 
     #[test]
     fn test_transform_edit_against_delete() {
-        let op_a = EditOp::MovePitch { note_id: 1, delta_semitones: 5.0 };
+        let op_a = EditOp::MovePitch {
+            note_id: 1,
+            delta_semitones: 5.0,
+        };
         let op_b = EditOp::DeleteNote { note_id: 1 };
 
         // B deletes the note A wants to edit. A becomes a no-op.
         let a_prime = transform(&op_a, &op_b);
-        if let EditOp::MovePitch { delta_semitones, .. } = a_prime {
+        if let EditOp::MovePitch {
+            delta_semitones, ..
+        } = a_prime
+        {
             assert!((delta_semitones).abs() < 1e-10);
         } else {
             panic!("Expected no-op MovePitch");
@@ -792,8 +881,14 @@ mod tests {
     #[test]
     fn test_transform_concurrent_nonconflicting_produces_same_result() {
         // Two edits on different notes: applying in either order should work.
-        let op_a = EditOp::MovePitch { note_id: 1, delta_semitones: 3.0 };
-        let op_b = EditOp::SetAmplitude { note_id: 2, amplitude: 0.5 };
+        let op_a = EditOp::MovePitch {
+            note_id: 1,
+            delta_semitones: 3.0,
+        };
+        let op_b = EditOp::SetAmplitude {
+            note_id: 2,
+            amplitude: 0.5,
+        };
 
         let a_prime = transform(&op_a, &op_b);
         let b_prime = transform(&op_b, &op_a);
@@ -805,8 +900,14 @@ mod tests {
 
     #[test]
     fn test_transform_concurrent_tempo_sets() {
-        let op_a = EditOp::SetTempo { position: 0.0, bpm: 120.0 };
-        let op_b = EditOp::SetTempo { position: 0.0, bpm: 140.0 };
+        let op_a = EditOp::SetTempo {
+            position: 0.0,
+            bpm: 120.0,
+        };
+        let op_b = EditOp::SetTempo {
+            position: 0.0,
+            bpm: 140.0,
+        };
 
         let a_prime = transform(&op_a, &op_b);
         if let EditOp::SetTempo { bpm, .. } = a_prime {
@@ -822,12 +923,18 @@ mod tests {
     fn test_conflict_resolution_same_note() {
         let local = make_op(
             0,
-            EditOp::SetAmplitude { note_id: 1, amplitude: 0.3 },
+            EditOp::SetAmplitude {
+                note_id: 1,
+                amplitude: 0.3,
+            },
             "alice",
         );
         let remote = make_op(
             5,
-            EditOp::SetAmplitude { note_id: 1, amplitude: 0.9 },
+            EditOp::SetAmplitude {
+                note_id: 1,
+                amplitude: 0.9,
+            },
             "bob",
         );
 
@@ -842,12 +949,18 @@ mod tests {
     fn test_conflict_resolution_additive() {
         let local = make_op(
             0,
-            EditOp::MovePitch { note_id: 1, delta_semitones: 2.0 },
+            EditOp::MovePitch {
+                note_id: 1,
+                delta_semitones: 2.0,
+            },
             "alice",
         );
         let remote = make_op(
             5,
-            EditOp::MovePitch { note_id: 1, delta_semitones: -1.0 },
+            EditOp::MovePitch {
+                note_id: 1,
+                delta_semitones: -1.0,
+            },
             "bob",
         );
 
@@ -859,7 +972,10 @@ mod tests {
     fn test_conflict_resolution_local_dropped() {
         let local = make_op(
             0,
-            EditOp::MovePitch { note_id: 1, delta_semitones: 2.0 },
+            EditOp::MovePitch {
+                note_id: 1,
+                delta_semitones: 2.0,
+            },
             "alice",
         );
         let remote = make_op(5, EditOp::DeleteNote { note_id: 1 }, "bob");
@@ -874,8 +990,14 @@ mod tests {
     fn test_session_apply_local_and_push() {
         let mut session = EditSession::new("alice".to_string());
 
-        session.apply_local(EditOp::MovePitch { note_id: 1, delta_semitones: 2.0 });
-        session.apply_local(EditOp::SetAmplitude { note_id: 2, amplitude: 0.5 });
+        session.apply_local(EditOp::MovePitch {
+            note_id: 1,
+            delta_semitones: 2.0,
+        });
+        session.apply_local(EditOp::SetAmplitude {
+            note_id: 2,
+            amplitude: 0.5,
+        });
 
         assert_eq!(session.pending_ops().len(), 2);
         assert_eq!(session.confirmed_ops().len(), 0);
@@ -883,7 +1005,10 @@ mod tests {
         let msg = session.next_push_message().unwrap();
         if let SyncMessage::PushOperation { operation } = msg {
             assert_eq!(operation.author, "alice");
-            if let EditOp::MovePitch { delta_semitones, .. } = operation.op {
+            if let EditOp::MovePitch {
+                delta_semitones, ..
+            } = operation.op
+            {
                 assert!((delta_semitones - 2.0).abs() < 1e-10);
             }
         }
@@ -892,8 +1017,14 @@ mod tests {
     #[test]
     fn test_session_handle_ack() {
         let mut session = EditSession::new("alice".to_string());
-        session.apply_local(EditOp::MovePitch { note_id: 1, delta_semitones: 2.0 });
-        session.apply_local(EditOp::SetAmplitude { note_id: 2, amplitude: 0.5 });
+        session.apply_local(EditOp::MovePitch {
+            note_id: 1,
+            delta_semitones: 2.0,
+        });
+        session.apply_local(EditOp::SetAmplitude {
+            note_id: 2,
+            amplitude: 0.5,
+        });
 
         session.handle_ack(10);
         assert_eq!(session.pending_ops().len(), 1);
@@ -906,12 +1037,18 @@ mod tests {
         let mut session = EditSession::new("alice".to_string());
 
         // Alice makes a local edit.
-        session.apply_local(EditOp::MovePitch { note_id: 1, delta_semitones: 2.0 });
+        session.apply_local(EditOp::MovePitch {
+            note_id: 1,
+            delta_semitones: 2.0,
+        });
 
         // Bob's edit arrives from the server: move the same note.
         let remote = make_op(
             5,
-            EditOp::MovePitch { note_id: 1, delta_semitones: -1.0 },
+            EditOp::MovePitch {
+                note_id: 1,
+                delta_semitones: -1.0,
+            },
             "bob",
         );
         session.receive_remote_ops(&[remote]);
@@ -924,18 +1061,27 @@ mod tests {
 
         // A conflict should have been recorded.
         assert_eq!(session.conflicts.len(), 1);
-        assert_eq!(session.conflicts[0].resolution, ConflictResolution::BothApplied);
+        assert_eq!(
+            session.conflicts[0].resolution,
+            ConflictResolution::BothApplied
+        );
     }
 
     #[test]
     fn test_session_rebase_own_op_confirmed() {
         let mut session = EditSession::new("alice".to_string());
-        session.apply_local(EditOp::SetAmplitude { note_id: 1, amplitude: 0.5 });
+        session.apply_local(EditOp::SetAmplitude {
+            note_id: 1,
+            amplitude: 0.5,
+        });
 
         // Server confirms Alice's own operation.
         let confirmed = make_op(
             7,
-            EditOp::SetAmplitude { note_id: 1, amplitude: 0.5 },
+            EditOp::SetAmplitude {
+                note_id: 1,
+                amplitude: 0.5,
+            },
             "alice",
         );
         session.receive_remote_ops(&[confirmed]);
@@ -949,9 +1095,15 @@ mod tests {
     #[test]
     fn test_session_serialization_crash_recovery() {
         let mut session = EditSession::new("alice".to_string());
-        session.apply_local(EditOp::MovePitch { note_id: 1, delta_semitones: 2.0 });
+        session.apply_local(EditOp::MovePitch {
+            note_id: 1,
+            delta_semitones: 2.0,
+        });
         session.handle_ack(1);
-        session.apply_local(EditOp::SetAmplitude { note_id: 2, amplitude: 0.8 });
+        session.apply_local(EditOp::SetAmplitude {
+            note_id: 2,
+            amplitude: 0.8,
+        });
 
         let json = session.to_json().unwrap();
         let restored = EditSession::from_json(&json).unwrap();
@@ -967,12 +1119,21 @@ mod tests {
     #[test]
     fn test_sync_message_serialization() {
         let messages = vec![
-            SyncMessage::SyncRequest { last_known_op_id: 42 },
+            SyncMessage::SyncRequest {
+                last_known_op_id: 42,
+            },
             SyncMessage::SyncResponse {
                 operations: vec![make_op(1, EditOp::DeleteNote { note_id: 5 }, "bob")],
             },
             SyncMessage::PushOperation {
-                operation: make_op(0, EditOp::SetTempo { position: 0.0, bpm: 128.0 }, "alice"),
+                operation: make_op(
+                    0,
+                    EditOp::SetTempo {
+                        position: 0.0,
+                        bpm: 128.0,
+                    },
+                    "alice",
+                ),
             },
             SyncMessage::AckOperation { op_id: 99 },
             SyncMessage::ModelSnapshot {
@@ -993,23 +1154,42 @@ mod tests {
     #[test]
     fn test_edit_op_target_note_ids() {
         assert_eq!(
-            EditOp::MovePitch { note_id: 1, delta_semitones: 0.0 }.target_note_ids(),
+            EditOp::MovePitch {
+                note_id: 1,
+                delta_semitones: 0.0
+            }
+            .target_note_ids(),
             vec![1]
         );
         assert_eq!(
-            EditOp::MergeNotes { note_ids: vec![1, 2, 3] }.target_note_ids(),
+            EditOp::MergeNotes {
+                note_ids: vec![1, 2, 3]
+            }
+            .target_note_ids(),
             vec![1, 2, 3]
         );
-        assert!(EditOp::SetTempo { position: 0.0, bpm: 120.0 }
-            .target_note_ids()
-            .is_empty());
+        assert!(EditOp::SetTempo {
+            position: 0.0,
+            bpm: 120.0
+        }
+        .target_note_ids()
+        .is_empty());
     }
 
     #[test]
     fn test_conflicts_with() {
-        let a = EditOp::MovePitch { note_id: 1, delta_semitones: 1.0 };
-        let b = EditOp::SetAmplitude { note_id: 1, amplitude: 0.5 };
-        let c = EditOp::MovePitch { note_id: 2, delta_semitones: 1.0 };
+        let a = EditOp::MovePitch {
+            note_id: 1,
+            delta_semitones: 1.0,
+        };
+        let b = EditOp::SetAmplitude {
+            note_id: 1,
+            amplitude: 0.5,
+        };
+        let c = EditOp::MovePitch {
+            note_id: 2,
+            delta_semitones: 1.0,
+        };
 
         assert!(a.conflicts_with(&b)); // Same note.
         assert!(!a.conflicts_with(&c)); // Different notes.
@@ -1027,14 +1207,23 @@ mod tests {
     #[test]
     fn test_transform_list() {
         let ops = vec![
-            EditOp::MovePitch { note_id: 1, delta_semitones: 1.0 },
-            EditOp::MovePitch { note_id: 2, delta_semitones: 2.0 },
+            EditOp::MovePitch {
+                note_id: 1,
+                delta_semitones: 1.0,
+            },
+            EditOp::MovePitch {
+                note_id: 2,
+                delta_semitones: 2.0,
+            },
         ];
         let against = EditOp::DeleteNote { note_id: 1 };
 
         let transformed = transform_list(&ops, &against);
         // First op should be a no-op (note deleted), second unchanged.
-        if let EditOp::MovePitch { delta_semitones, .. } = &transformed[0] {
+        if let EditOp::MovePitch {
+            delta_semitones, ..
+        } = &transformed[0]
+        {
             assert!(delta_semitones.abs() < 1e-10);
         }
         assert_eq!(transformed[1], ops[1]);

@@ -17,9 +17,7 @@ use std::sync::{Arc, Mutex};
 use std::thread::{self, JoinHandle};
 use std::time::Duration;
 
-use crate::collab::{
-    CollabError, EditOp, EditOperation, EditSession, OperationLog, SyncMessage,
-};
+use crate::collab::{CollabError, EditOp, EditOperation, EditSession, OperationLog, SyncMessage};
 
 // ---------------------------------------------------------------------------
 // Network errors
@@ -254,7 +252,10 @@ impl SyncServer {
     /// The number of currently connected clients.
     pub fn client_count(&self) -> usize {
         let clients = self.clients.lock().unwrap();
-        clients.values().filter(|c| c.alive.load(Ordering::Relaxed)).count()
+        clients
+            .values()
+            .filter(|c| c.alive.load(Ordering::Relaxed))
+            .count()
     }
 
     /// Set a model snapshot JSON that will be sent to clients on `ModelSnapshot` request.
@@ -354,13 +355,7 @@ impl SyncServer {
                     }
                 };
 
-                Self::handle_client_message(
-                    &msg,
-                    &cid,
-                    &operation_log,
-                    &clients,
-                    &model_snapshot,
-                );
+                Self::handle_client_message(&msg, &cid, &operation_log, &clients, &model_snapshot);
             }
 
             // Remove the client on disconnect.
@@ -574,9 +569,10 @@ impl SyncClient {
     ///
     /// Returns `Ok(None)` if no message is currently available.
     pub fn try_recv(&self) -> NetworkResult<Option<SyncMessage>> {
-        let rx = self.incoming.lock().map_err(|e| {
-            NetworkError::ChannelError(format!("Failed to lock incoming: {}", e))
-        })?;
+        let rx = self
+            .incoming
+            .lock()
+            .map_err(|e| NetworkError::ChannelError(format!("Failed to lock incoming: {}", e)))?;
         match rx.try_recv() {
             Ok(msg) => Ok(Some(msg)),
             Err(mpsc::TryRecvError::Empty) => Ok(None),
@@ -587,9 +583,10 @@ impl SyncClient {
     /// Receive the next message from the server, blocking until one arrives or
     /// the given timeout elapses.
     pub fn recv_timeout(&self, timeout: Duration) -> NetworkResult<Option<SyncMessage>> {
-        let rx = self.incoming.lock().map_err(|e| {
-            NetworkError::ChannelError(format!("Failed to lock incoming: {}", e))
-        })?;
+        let rx = self
+            .incoming
+            .lock()
+            .map_err(|e| NetworkError::ChannelError(format!("Failed to lock incoming: {}", e)))?;
         match rx.recv_timeout(timeout) {
             Ok(msg) => Ok(Some(msg)),
             Err(mpsc::RecvTimeoutError::Timeout) => Ok(None),
@@ -599,9 +596,10 @@ impl SyncClient {
 
     /// Drain all currently available messages from the server (non-blocking).
     pub fn drain_messages(&self) -> NetworkResult<Vec<SyncMessage>> {
-        let rx = self.incoming.lock().map_err(|e| {
-            NetworkError::ChannelError(format!("Failed to lock incoming: {}", e))
-        })?;
+        let rx = self
+            .incoming
+            .lock()
+            .map_err(|e| NetworkError::ChannelError(format!("Failed to lock incoming: {}", e)))?;
         let mut msgs = Vec::new();
         loop {
             match rx.try_recv() {
@@ -904,7 +902,9 @@ mod tests {
 
         // Client A should get an Ack.
         let a_msgs = client_a.drain_messages().unwrap();
-        let has_ack = a_msgs.iter().any(|m| matches!(m, SyncMessage::AckOperation { .. }));
+        let has_ack = a_msgs
+            .iter()
+            .any(|m| matches!(m, SyncMessage::AckOperation { .. }));
         assert!(has_ack, "Client A should receive an AckOperation");
 
         // Client B should get a SyncResponse with the confirmed operation.
@@ -965,20 +965,17 @@ mod tests {
         let b_msgs = client_b.drain_messages().unwrap();
         let found = b_msgs.iter().any(|m| {
             if let SyncMessage::SyncResponse { operations } = m {
-                operations.iter().any(|o| {
-                    matches!(
-                        &o.op,
-                        EditOp::SetAmplitude {
-                            note_id: 10,
-                            ..
-                        }
-                    )
-                })
+                operations
+                    .iter()
+                    .any(|o| matches!(&o.op, EditOp::SetAmplitude { note_id: 10, .. }))
             } else {
                 false
             }
         });
-        assert!(found, "Client B should receive missed operations on reconnect");
+        assert!(
+            found,
+            "Client B should receive missed operations on reconnect"
+        );
 
         server.stop();
     }
@@ -1051,7 +1048,9 @@ mod tests {
         let b_msgs = client_b.drain_messages().unwrap();
 
         // Client A should get an ack for its own op + a sync for B's op.
-        let a_has_ack = a_msgs.iter().any(|m| matches!(m, SyncMessage::AckOperation { .. }));
+        let a_has_ack = a_msgs
+            .iter()
+            .any(|m| matches!(m, SyncMessage::AckOperation { .. }));
         assert!(a_has_ack, "Client A should get an ack");
 
         let a_has_bob_op = a_msgs.iter().any(|m| {
@@ -1064,7 +1063,9 @@ mod tests {
         assert!(a_has_bob_op, "Client A should see Bob's operation");
 
         // Client B should get an ack for its own op + a sync for A's op.
-        let b_has_ack = b_msgs.iter().any(|m| matches!(m, SyncMessage::AckOperation { .. }));
+        let b_has_ack = b_msgs
+            .iter()
+            .any(|m| matches!(m, SyncMessage::AckOperation { .. }));
         assert!(b_has_ack, "Client B should get an ack");
 
         let b_has_alice_op = b_msgs.iter().any(|m| {
@@ -1121,10 +1122,8 @@ mod tests {
         let mut server = start_test_server();
         let addr = server.local_addr();
 
-        let mut session_a =
-            CollabSession::join(addr, "alice".to_string()).expect("alice join");
-        let mut session_b =
-            CollabSession::join(addr, "bob".to_string()).expect("bob join");
+        let mut session_a = CollabSession::join(addr, "alice".to_string()).expect("alice join");
+        let mut session_b = CollabSession::join(addr, "bob".to_string()).expect("bob join");
         settle_long();
 
         // Drain initial sync.

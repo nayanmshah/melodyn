@@ -275,11 +275,10 @@ pub fn toolbar(ui: &mut egui::Ui, state: &mut AppState) {
 
         for tool in Tool::ALL {
             let is_active = state.active_tool == tool;
-            let button = egui::Button::new(tool.label())
-                .selected(is_active);
-            let response = ui.add(button).on_hover_text(
-                format!("{} [{}]", tool.tooltip(), tool.shortcut()),
-            );
+            let button = egui::Button::new(tool.label()).selected(is_active);
+            let response =
+                ui.add(button)
+                    .on_hover_text(format!("{} [{}]", tool.tooltip(), tool.shortcut()));
             if response.clicked() {
                 state.active_tool = tool;
             }

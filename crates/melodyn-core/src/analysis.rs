@@ -239,7 +239,10 @@ pub fn detect_polyphony(slices: &[SpectralTimeSlice]) -> bool {
 
         // Check for multiple independent harmonic series
         // by looking for peaks that don't form a single harmonic ladder
-        let mut freqs: Vec<f64> = peaks.iter().map(|&(bin, _)| slice.bin_to_freq(bin)).collect();
+        let mut freqs: Vec<f64> = peaks
+            .iter()
+            .map(|&(bin, _)| slice.bin_to_freq(bin))
+            .collect();
         freqs.sort_by(|a, b| a.partial_cmp(b).unwrap());
 
         if has_multiple_fundamentals(&freqs) {
@@ -324,10 +327,7 @@ mod tests {
         let analyzer = SpectralAnalyzer::new(config);
         let result = analyzer.analyze(&audio);
 
-        assert!(
-            !result.notes.is_empty(),
-            "Should detect at least one note"
-        );
+        assert!(!result.notes.is_empty(), "Should detect at least one note");
 
         // The detected pitch should be near 440 Hz
         if let Some(note) = result.notes.first() {

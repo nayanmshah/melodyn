@@ -46,10 +46,7 @@ pub fn timeline_ruler(ui: &mut egui::Ui, state: &AppState) {
 
     // Skip piano-width area on the left to align with editor
     let piano_width = 50.0;
-    let ruler_rect = Rect::from_min_max(
-        Pos2::new(rect.left() + piano_width, rect.top()),
-        rect.max,
-    );
+    let ruler_rect = Rect::from_min_max(Pos2::new(rect.left() + piano_width, rect.top()), rect.max);
 
     if state.beat_grid.is_some() {
         draw_beat_ruler(&painter, ruler_rect, state);
@@ -129,7 +126,10 @@ fn draw_time_ruler(painter: &egui::Painter, rect: Rect, state: &AppState) {
             if x >= rect.left() && x <= rect.right() {
                 // Major tick line
                 painter.line_segment(
-                    [Pos2::new(x, rect.bottom() - 10.0), Pos2::new(x, rect.bottom())],
+                    [
+                        Pos2::new(x, rect.bottom() - 10.0),
+                        Pos2::new(x, rect.bottom()),
+                    ],
                     Stroke::new(1.0_f32, MAJOR_TICK),
                 );
 
@@ -154,7 +154,10 @@ fn draw_time_ruler(painter: &egui::Painter, rect: Rect, state: &AppState) {
             let x = rect.left() + ((t - state.time_offset) * state.time_scale) as f32;
             if x >= rect.left() && x <= rect.right() {
                 painter.line_segment(
-                    [Pos2::new(x, rect.bottom() - 5.0), Pos2::new(x, rect.bottom())],
+                    [
+                        Pos2::new(x, rect.bottom() - 5.0),
+                        Pos2::new(x, rect.bottom()),
+                    ],
                     Stroke::new(0.5_f32, TICK_COLOR),
                 );
             }
@@ -183,7 +186,10 @@ fn draw_beat_ruler(painter: &egui::Painter, rect: Rect, state: &AppState) {
         if beat.is_downbeat {
             // Major tick + bar number
             painter.line_segment(
-                [Pos2::new(x, rect.bottom() - 12.0), Pos2::new(x, rect.bottom())],
+                [
+                    Pos2::new(x, rect.bottom() - 12.0),
+                    Pos2::new(x, rect.bottom()),
+                ],
                 Stroke::new(1.0_f32, MAJOR_TICK),
             );
 
@@ -198,7 +204,10 @@ fn draw_beat_ruler(painter: &egui::Painter, rect: Rect, state: &AppState) {
         } else {
             // Minor tick + beat number
             painter.line_segment(
-                [Pos2::new(x, rect.bottom() - 6.0), Pos2::new(x, rect.bottom())],
+                [
+                    Pos2::new(x, rect.bottom() - 6.0),
+                    Pos2::new(x, rect.bottom()),
+                ],
                 Stroke::new(0.5_f32, TICK_COLOR),
             );
 

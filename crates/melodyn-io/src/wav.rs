@@ -328,7 +328,12 @@ mod tests {
         let read_back = read_wav(&path).expect("Read should succeed");
         for i in 0..500 {
             let error = (read_back.get(0, i) - samples[i]).abs();
-            assert!(error < 0.0001, "Float sample {} error {} too large", i, error);
+            assert!(
+                error < 0.0001,
+                "Float sample {} error {} too large",
+                i,
+                error
+            );
         }
 
         let _ = std::fs::remove_file(&path);

@@ -173,7 +173,12 @@ impl EnergyClaimEngine {
                 let start_bin = center_bin.saturating_sub(self.config.bin_radius);
                 let end_bin = (center_bin + self.config.bin_radius + 1).min(num_bins);
 
-                for (bin, total_weight) in bin_total_weight.iter_mut().enumerate().take(end_bin).skip(start_bin) {
+                for (bin, total_weight) in bin_total_weight
+                    .iter_mut()
+                    .enumerate()
+                    .take(end_bin)
+                    .skip(start_bin)
+                {
                     // Distance-weighted claim (Gaussian-like falloff from center)
                     let dist = (bin as f64 - center_bin as f64).abs();
                     let spatial_weight = (-dist * dist / 2.0).exp();
@@ -258,7 +263,9 @@ mod tests {
     use std::f64::consts::PI;
 
     fn sine_wave(freq: f64, sr: f64, n: usize) -> Vec<f64> {
-        (0..n).map(|i| (2.0 * PI * freq * i as f64 / sr).sin()).collect()
+        (0..n)
+            .map(|i| (2.0 * PI * freq * i as f64 / sr).sin())
+            .collect()
     }
 
     #[test]

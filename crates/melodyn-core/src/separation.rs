@@ -81,9 +81,7 @@ pub fn hpss(audio: &[f64], config: &HpssConfig) -> HpssResult {
     let mut mag_spec: Vec<Vec<f64>> = Vec::with_capacity(num_frames);
     for frame_idx in 0..num_frames {
         let offset = frame_idx * n;
-        let frame_mag: Vec<f64> = (0..num_bins)
-            .map(|k| stft[offset + k].norm())
-            .collect();
+        let frame_mag: Vec<f64> = (0..num_bins).map(|k| stft[offset + k].norm()).collect();
         mag_spec.push(frame_mag);
     }
 
@@ -120,8 +118,22 @@ pub fn hpss(audio: &[f64], config: &HpssConfig) -> HpssResult {
     }
 
     // Inverse STFT with overlap-add
-    let harmonic = inverse_stft(&harmonic_stft, n, hop, num_frames, audio.len(), config.window_type);
-    let percussive = inverse_stft(&percussive_stft, n, hop, num_frames, audio.len(), config.window_type);
+    let harmonic = inverse_stft(
+        &harmonic_stft,
+        n,
+        hop,
+        num_frames,
+        audio.len(),
+        config.window_type,
+    );
+    let percussive = inverse_stft(
+        &percussive_stft,
+        n,
+        hop,
+        num_frames,
+        audio.len(),
+        config.window_type,
+    );
 
     // Residual
     let residual: Vec<f64> = audio
@@ -129,7 +141,11 @@ pub fn hpss(audio: &[f64], config: &HpssConfig) -> HpssResult {
         .enumerate()
         .map(|(i, &s)| {
             let h = if i < harmonic.len() { harmonic[i] } else { 0.0 };
-            let p = if i < percussive.len() { percussive[i] } else { 0.0 };
+            let p = if i < percussive.len() {
+                percussive[i]
+            } else {
+                0.0
+            };
             s - h - p
         })
         .collect();
@@ -316,7 +332,14 @@ pub fn nmf_separate(audio: &[f64], config: &NmfConfig) -> NmfResult {
                 }
             }
         }
-        let signal = inverse_stft(&comp_stft, n, hop, num_frames, audio.len(), config.window_type);
+        let signal = inverse_stft(
+            &comp_stft,
+            n,
+            hop,
+            num_frames,
+            audio.len(),
+            config.window_type,
+        );
         components.push(signal);
     }
 
@@ -407,7 +430,10 @@ pub struct ExtractedSource {
 /// 3. Build a harmonic mask for that pitch
 /// 4. Extract the masked signal, subtract from residual
 /// 5. Repeat for next source
-pub fn spectral_subtraction(audio: &[f64], config: &SpectralSubtractionConfig) -> SpectralSubtractionResult {
+pub fn spectral_subtraction(
+    audio: &[f64],
+    config: &SpectralSubtractionConfig,
+) -> SpectralSubtractionResult {
     let n = config.fft_size;
     let hop = config.hop_size;
     let num_bins = n / 2 + 1;
@@ -417,9 +443,7 @@ pub fn spectral_subtraction(audio: &[f64], config: &SpectralSubtractionConfig) -
     // Work with a mutable copy of the magnitude spectrogram
     let mut residual_mag: Vec<Vec<f64>> = Vec::with_capacity(num_frames);
     for t in 0..num_frames {
-        let frame_mag: Vec<f64> = (0..num_bins)
-            .map(|k| stft[t * n + k].norm())
-            .collect();
+        let frame_mag: Vec<f64> = (0..num_bins).map(|k| stft[t * n + k].norm()).collect();
         residual_mag.push(frame_mag);
     }
 
@@ -475,7 +499,14 @@ pub fn spectral_subtraction(audio: &[f64], config: &SpectralSubtractionConfig) -
             }
         }
 
-        let signal = inverse_stft(&source_stft, n, hop, num_frames, audio.len(), config.window_type);
+        let signal = inverse_stft(
+            &source_stft,
+            n,
+            hop,
+            num_frames,
+            audio.len(),
+            config.window_type,
+        );
         sources.push(ExtractedSource {
             fundamental: f0,
             signal,
@@ -579,10 +610,7 @@ pub fn inverse_stft(
 
     // Compute steady-state window_sum (the value in the well-covered interior).
     // Use this as a minimum threshold to avoid edge amplification.
-    let max_window_sum = window_sum
-        .iter()
-        .copied()
-        .fold(0.0f64, f64::max);
+    let max_window_sum = window_sum.iter().copied().fold(0.0f64, f64::max);
     let min_window_sum = max_window_sum * 0.1;
 
     // Normalize by window sum (overlap-add normalization)
@@ -704,7 +732,12 @@ fn initialize_nmf(
                     if bin < num_bins {
                         let weight = 1.0 / h_num as f64;
                         // Gaussian spread around the harmonic bin
-                        for (b, w_row) in w.iter_mut().enumerate().take((bin + 4).min(num_bins)).skip(bin.saturating_sub(3)) {
+                        for (b, w_row) in w
+                            .iter_mut()
+                            .enumerate()
+                            .take((bin + 4).min(num_bins))
+                            .skip(bin.saturating_sub(3))
+                        {
                             let dist = (b as f64 - bin as f64).abs();
                             w_row[c] += weight * (-dist * dist / 2.0).exp();
                         }
@@ -1014,7 +1047,11 @@ mod tests {
         let click_pos = n / 2;
         let click = click_signal(click_pos, n);
 
-        let mixed: Vec<f64> = tone.iter().zip(click.iter()).map(|(&t, &c)| t + c).collect();
+        let mixed: Vec<f64> = tone
+            .iter()
+            .zip(click.iter())
+            .map(|(&t, &c)| t + c)
+            .collect();
 
         let config = HpssConfig {
             fft_size: 2048,

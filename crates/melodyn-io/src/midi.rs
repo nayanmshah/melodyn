@@ -14,17 +14,47 @@ use std::io::{self, Write};
 /// MIDI channel voice message types.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum MidiMessage {
-    NoteOff { channel: u8, note: u8, velocity: u8 },
-    NoteOn { channel: u8, note: u8, velocity: u8 },
-    PolyAftertouch { channel: u8, note: u8, pressure: u8 },
-    ControlChange { channel: u8, controller: u8, value: u8 },
-    ProgramChange { channel: u8, program: u8 },
-    ChannelAftertouch { channel: u8, pressure: u8 },
-    PitchBend { channel: u8, value: u16 },
+    NoteOff {
+        channel: u8,
+        note: u8,
+        velocity: u8,
+    },
+    NoteOn {
+        channel: u8,
+        note: u8,
+        velocity: u8,
+    },
+    PolyAftertouch {
+        channel: u8,
+        note: u8,
+        pressure: u8,
+    },
+    ControlChange {
+        channel: u8,
+        controller: u8,
+        value: u8,
+    },
+    ProgramChange {
+        channel: u8,
+        program: u8,
+    },
+    ChannelAftertouch {
+        channel: u8,
+        pressure: u8,
+    },
+    PitchBend {
+        channel: u8,
+        value: u16,
+    },
     /// Meta events (tempo, time signature, key signature, text, etc.)
-    Meta { meta_type: u8, data: Vec<u8> },
+    Meta {
+        meta_type: u8,
+        data: Vec<u8>,
+    },
     /// System exclusive
-    SysEx { data: Vec<u8> },
+    SysEx {
+        data: Vec<u8>,
+    },
 }
 
 impl MidiMessage {
@@ -93,7 +123,10 @@ impl MidiTrack {
 
     /// Get all note-on events.
     pub fn note_events(&self) -> Vec<&MidiEvent> {
-        self.events.iter().filter(|e| e.message.is_note_on()).collect()
+        self.events
+            .iter()
+            .filter(|e| e.message.is_note_on())
+            .collect()
     }
 
     /// Duration in ticks.
@@ -804,10 +837,7 @@ pub fn notes_to_midi_file(
 ///
 /// Pairs NoteOn with matching NoteOff to create notes with start time,
 /// duration, and other properties.
-pub fn midi_to_notes(
-    track: &MidiTrack,
-    tempo_map: &TempoMap,
-) -> Vec<melodyn_core::DetectedNote> {
+pub fn midi_to_notes(track: &MidiTrack, tempo_map: &TempoMap) -> Vec<melodyn_core::DetectedNote> {
     let mut notes = Vec::new();
     // Track pending note-ons: (note_number, channel) -> (tick, velocity)
     let mut pending: std::collections::HashMap<(u8, u8), (u64, u8)> =

@@ -130,9 +130,7 @@ pub fn estimate_tdoa(signal1: &[f64], signal2: &[f64], config: &TdoaConfig) -> T
     let raw_delay = best_idx as f64 - max_d as f64;
 
     // Sub-sample parabolic interpolation
-    let delay_samples = if config.subsample_interpolation
-        && best_idx > 0
-        && best_idx < gcc_len - 1
+    let delay_samples = if config.subsample_interpolation && best_idx > 0 && best_idx < gcc_len - 1
     {
         let alpha = gcc_function[best_idx - 1];
         let beta = gcc_function[best_idx];
@@ -229,10 +227,7 @@ pub struct SpatialClusterResult {
 ///
 /// Each TDOA estimate is a data point in 1D delay space. Sources at
 /// different spatial positions will cluster at different delay values.
-pub fn spatial_clustering(
-    delays: &[f64],
-    config: &SpatialClusterConfig,
-) -> SpatialClusterResult {
+pub fn spatial_clustering(delays: &[f64], config: &SpatialClusterConfig) -> SpatialClusterResult {
     let n = delays.len();
     let k = config.num_sources;
 
@@ -515,10 +510,7 @@ pub fn mvdr_beamform(
 }
 
 /// Compute MVDR weights for a 2x2 spatial covariance matrix.
-fn mvdr_weights_2x2(
-    r: &[Vec<Complex<f64>>],
-    d: &[Complex<f64>],
-) -> Vec<Complex<f64>> {
+fn mvdr_weights_2x2(r: &[Vec<Complex<f64>>], d: &[Complex<f64>]) -> Vec<Complex<f64>> {
     // Invert 2x2 matrix: R^{-1} = (1/det) * [[r22, -r12], [-r21, r11]]
     let det = r[0][0] * r[1][1] - r[0][1] * r[1][0];
     let det_norm = det.norm();
@@ -621,7 +613,8 @@ pub fn multichannel_wiener_filter(
     let num_frames = channel_stfts[0].1;
 
     // Compute mixture covariance per frequency bin
-    let mut mix_cov = vec![vec![vec![Complex::new(0.0, 0.0); num_channels]; num_channels]; num_bins];
+    let mut mix_cov =
+        vec![vec![vec![Complex::new(0.0, 0.0); num_channels]; num_channels]; num_bins];
 
     for k in 0..num_bins {
         for t in 0..num_frames {
@@ -675,8 +668,7 @@ pub fn multichannel_wiener_filter(
             bf_power /= num_frames as f64;
 
             // Source covariance: R_j = power_j * d * d^H
-            let mut src_cov =
-                vec![vec![Complex::new(0.0, 0.0); num_channels]; num_channels];
+            let mut src_cov = vec![vec![Complex::new(0.0, 0.0); num_channels]; num_channels];
             for i in 0..num_channels {
                 for j in 0..num_channels {
                     src_cov[i][j] = d[i] * d[j].conj() * bf_power;
@@ -948,20 +940,14 @@ mod tests {
         };
 
         // Steer toward the target (delay = [0, 5])
-        let beamformed = delay_and_sum_beamform(
-            &[mic1.clone(), mic2.clone()],
-            &[0.0, delay as f64],
-            &config,
-        );
+        let beamformed =
+            delay_and_sum_beamform(&[mic1.clone(), mic2.clone()], &[0.0, delay as f64], &config);
 
         assert_eq!(beamformed.len(), n);
 
         // The beamformed output should have energy
         let bf_energy: f64 = beamformed.iter().map(|s| s * s).sum();
-        assert!(
-            bf_energy > 0.0,
-            "Beamformed signal should have energy"
-        );
+        assert!(bf_energy > 0.0, "Beamformed signal should have energy");
 
         // Measure energy in target frequency band vs interference band
         let fft_engine = FftEngine::new(4096, WindowType::Hann);
@@ -978,15 +964,13 @@ mod tests {
 
             // Target at 440 Hz -> bin ~ 440 * 4096 / 44100 ~ 41
             let target_bin = (440.0 * 4096.0 / sr).round() as usize;
-            let target_mag = mag[target_bin.saturating_sub(2)..=(target_bin + 2).min(mag.len() - 1)]
+            let target_mag = mag
+                [target_bin.saturating_sub(2)..=(target_bin + 2).min(mag.len() - 1)]
                 .iter()
                 .copied()
                 .fold(0.0f64, f64::max);
 
-            assert!(
-                target_mag > 0.0,
-                "Should have energy at target frequency"
-            );
+            assert!(target_mag > 0.0, "Should have energy at target frequency");
         }
     }
 
@@ -1010,11 +994,7 @@ mod tests {
             window_type: WindowType::Hann,
         };
 
-        let result = mvdr_beamform(
-            &[mic1, mic2],
-            &[0.0, delay as f64],
-            &config,
-        );
+        let result = mvdr_beamform(&[mic1, mic2], &[0.0, delay as f64], &config);
 
         let energy: f64 = result.iter().map(|s| s * s).sum();
         assert!(energy > 0.0, "MVDR output should have energy");
@@ -1058,20 +1038,13 @@ mod tests {
             covariance_frames: 5,
         };
 
-        let result = multichannel_wiener_filter(
-            &[mic1, mic2],
-            &[vec![0.0, 5.0], vec![0.0, 15.0]],
-            &config,
-        );
+        let result =
+            multichannel_wiener_filter(&[mic1, mic2], &[vec![0.0, 5.0], vec![0.0, 15.0]], &config);
 
         assert_eq!(result.sources.len(), 2);
         for (i, src) in result.sources.iter().enumerate() {
             let energy: f64 = src.iter().map(|s| s * s).sum();
-            assert!(
-                energy > 0.0,
-                "Source {} should have energy",
-                i
-            );
+            assert!(energy > 0.0, "Source {} should have energy", i);
         }
     }
 

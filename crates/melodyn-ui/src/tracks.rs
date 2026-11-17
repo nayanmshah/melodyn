@@ -195,8 +195,7 @@ pub fn track_list_panel(
                 track_state.tracks[track_idx].source_path =
                     Some(path.to_string_lossy().to_string());
                 track_state.active_track = track_idx;
-                app_state.status_message =
-                    format!("Added track from {}", path.display());
+                app_state.status_message = format!("Added track from {}", path.display());
             }
         }
     });
@@ -260,8 +259,10 @@ pub fn track_list_panel(
                     // Color bar + name row
                     ui.horizontal(|ui| {
                         // Color indicator (clickable for color picker)
-                        let (color_resp, color_painter) =
-                            ui.allocate_painter(Vec2::new(8.0, TRACK_ROW_HEIGHT - 16.0), egui::Sense::click());
+                        let (color_resp, color_painter) = ui.allocate_painter(
+                            Vec2::new(8.0, TRACK_ROW_HEIGHT - 16.0),
+                            egui::Sense::click(),
+                        );
                         color_painter.rect_filled(color_resp.rect, 2.0, track_color);
                         if color_resp.clicked() {
                             track_state.color_picker_track = Some(i);
@@ -269,7 +270,8 @@ pub fn track_list_panel(
 
                         ui.vertical(|ui| {
                             // Name (click to make active)
-                            let name_resp = ui.selectable_label(is_active, &track_state.tracks[i].name);
+                            let name_resp =
+                                ui.selectable_label(is_active, &track_state.tracks[i].name);
                             if name_resp.clicked() {
                                 track_state.active_track = i;
                             }
@@ -316,18 +318,11 @@ pub fn track_list_panel(
 
                             // Volume slider
                             ui.horizontal(|ui| {
-                                ui.label(
-                                    egui::RichText::new("Vol").small(),
-                                );
+                                ui.label(egui::RichText::new("Vol").small());
                                 ui.add(
-                                    egui::Slider::new(
-                                        &mut track_state.tracks[i].volume,
-                                        0.0..=2.0,
-                                    )
-                                    .show_value(false)
-                                    .custom_formatter(|v, _| {
-                                        format!("{:.0}%", v * 100.0)
-                                    }),
+                                    egui::Slider::new(&mut track_state.tracks[i].volume, 0.0..=2.0)
+                                        .show_value(false)
+                                        .custom_formatter(|v, _| format!("{:.0}%", v * 100.0)),
                                 );
                             });
 
@@ -377,10 +372,8 @@ pub fn track_list_panel(
                             (g * 255.0) as u8,
                             (b * 255.0) as u8,
                         );
-                        let (resp, painter) = ui.allocate_painter(
-                            Vec2::new(24.0, 24.0),
-                            egui::Sense::click(),
-                        );
+                        let (resp, painter) =
+                            ui.allocate_painter(Vec2::new(24.0, 24.0), egui::Sense::click());
                         painter.rect_filled(resp.rect, 3.0, color);
                         let is_current = picker_idx < track_state.tracks.len()
                             && track_state.tracks[picker_idx].color == (r, g, b);

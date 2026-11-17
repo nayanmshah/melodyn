@@ -172,10 +172,7 @@ impl FormantModel {
             })
             .collect();
 
-        Self {
-            bands,
-            sample_rate,
-        }
+        Self { bands, sample_rate }
     }
 
     /// Extract formant envelope from a magnitude spectrum.
@@ -188,9 +185,9 @@ impl FormantModel {
         self.bands
             .iter()
             .map(|band| {
-                let lo_bin =
-                    ((band.center_freq - band.bandwidth / 2.0) / freq_res).floor().max(0.0)
-                        as usize;
+                let lo_bin = ((band.center_freq - band.bandwidth / 2.0) / freq_res)
+                    .floor()
+                    .max(0.0) as usize;
                 let hi_bin = ((band.center_freq + band.bandwidth / 2.0) / freq_res)
                     .ceil()
                     .min(num_bins as f64 - 1.0) as usize;
@@ -200,8 +197,10 @@ impl FormantModel {
                 }
 
                 // RMS energy in the band
-                let energy: f64 =
-                    magnitude[lo_bin..=hi_bin].iter().map(|m| m * m).sum::<f64>();
+                let energy: f64 = magnitude[lo_bin..=hi_bin]
+                    .iter()
+                    .map(|m| m * m)
+                    .sum::<f64>();
                 let n = (hi_bin - lo_bin + 1) as f64;
                 (energy / n).sqrt()
             })
@@ -222,8 +221,9 @@ impl FormantModel {
         let num_bins = magnitude.len();
 
         for (band_idx, band) in self.bands.iter().enumerate() {
-            let lo_bin =
-                ((band.center_freq - band.bandwidth / 2.0) / freq_res).floor().max(0.0) as usize;
+            let lo_bin = ((band.center_freq - band.bandwidth / 2.0) / freq_res)
+                .floor()
+                .max(0.0) as usize;
             let hi_bin = ((band.center_freq + band.bandwidth / 2.0) / freq_res)
                 .ceil()
                 .min(num_bins as f64 - 1.0) as usize;
@@ -243,13 +243,13 @@ impl FormantModel {
                 1.0
             };
 
-            let gain = if source > 1e-10 {
-                target / source
-            } else {
-                1.0
-            };
+            let gain = if source > 1e-10 { target / source } else { 1.0 };
 
-            for mag in magnitude.iter_mut().take(hi_bin.min(num_bins - 1) + 1).skip(lo_bin) {
+            for mag in magnitude
+                .iter_mut()
+                .take(hi_bin.min(num_bins - 1) + 1)
+                .skip(lo_bin)
+            {
                 *mag *= gain;
             }
         }
@@ -399,7 +399,9 @@ impl FormantProcessor {
         // Simple pseudo-random using a basic LCG
         let mut rng_state: u64 = 42;
         let next_rand = |state: &mut u64| -> f64 {
-            *state = state.wrapping_mul(6364136223846793005).wrapping_add(1442695040888963407);
+            *state = state
+                .wrapping_mul(6364136223846793005)
+                .wrapping_add(1442695040888963407);
             (*state >> 33) as f64 / (1u64 << 31) as f64 - 1.0
         };
 
@@ -408,7 +410,8 @@ impl FormantProcessor {
 
             // Fundamental pulse train
             let pulse = (2.0 * PI * fundamental * t).sin();
-            let fund = self.synth_params.fundamental_amp * pulse
+            let fund = self.synth_params.fundamental_amp
+                * pulse
                 * (1.0 + self.synth_params.fundamental_random * next_rand(&mut rng_state));
 
             // Subharmonics
@@ -424,14 +427,12 @@ impl FormantProcessor {
 
             // Noise components
             let noise = self.synth_params.const_noise * next_rand(&mut rng_state);
-            let wave_noise =
-                self.synth_params.wave_noise * pulse.abs() * next_rand(&mut rng_state);
+            let wave_noise = self.synth_params.wave_noise * pulse.abs() * next_rand(&mut rng_state);
 
             *out_val = fund + sub2 + sub3 + sub4 + noise + wave_noise;
 
             // Time randomization
-            *out_val *=
-                1.0 + self.synth_params.time_random * next_rand(&mut rng_state);
+            *out_val *= 1.0 + self.synth_params.time_random * next_rand(&mut rng_state);
         }
 
         output

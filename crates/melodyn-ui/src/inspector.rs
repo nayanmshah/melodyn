@@ -25,7 +25,11 @@ pub fn inspector_panel(ui: &mut egui::Ui, state: &mut AppState) {
     }
 
     let count = state.selected_notes.len();
-    ui.label(format!("{} note{} selected", count, if count > 1 { "s" } else { "" }));
+    ui.label(format!(
+        "{} note{} selected",
+        count,
+        if count > 1 { "s" } else { "" }
+    ));
     ui.add_space(4.0);
 
     if count == 1 {

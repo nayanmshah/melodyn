@@ -153,8 +153,22 @@ pub fn extract_center_spectral(
         }
     }
 
-    let center = inverse_stft(&center_stft, n, hop, num_frames, signal_len, config.window_type);
-    let sides = inverse_stft(&sides_stft, n, hop, num_frames, signal_len, config.window_type);
+    let center = inverse_stft(
+        &center_stft,
+        n,
+        hop,
+        num_frames,
+        signal_len,
+        config.window_type,
+    );
+    let sides = inverse_stft(
+        &sides_stft,
+        n,
+        hop,
+        num_frames,
+        signal_len,
+        config.window_type,
+    );
 
     CenterExtractionResult { center, sides }
 }
@@ -225,7 +239,12 @@ pub fn generate_harmonic_mask(
 
     // Smooth the mask in time
     if config.mask_smoothing_frames > 1 {
-        smooth_mask_time(&mut mask, num_frames, num_bins, config.mask_smoothing_frames);
+        smooth_mask_time(
+            &mut mask,
+            num_frames,
+            num_bins,
+            config.mask_smoothing_frames,
+        );
     }
 
     // Smooth the mask in frequency
@@ -365,9 +384,22 @@ pub fn isolate_vocal_harmonic(
         }
     }
 
-    let vocal = inverse_stft(&vocal_stft, n, hop, num_frames, audio.len(), config.window_type);
-    let accompaniment =
-        inverse_stft(&accomp_stft, n, hop, num_frames, audio.len(), config.window_type);
+    let vocal = inverse_stft(
+        &vocal_stft,
+        n,
+        hop,
+        num_frames,
+        audio.len(),
+        config.window_type,
+    );
+    let accompaniment = inverse_stft(
+        &accomp_stft,
+        n,
+        hop,
+        num_frames,
+        audio.len(),
+        config.window_type,
+    );
 
     VocalIsolationResult {
         vocal,
@@ -558,12 +590,7 @@ pub fn compute_sdr(reference: &[f64], estimated: &[f64]) -> f64 {
 // ---------------------------------------------------------------------------
 
 /// Smooth mask along the time axis using a moving average.
-fn smooth_mask_time(
-    mask: &mut [Vec<f64>],
-    num_frames: usize,
-    num_bins: usize,
-    kernel: usize,
-) {
+fn smooth_mask_time(mask: &mut [Vec<f64>], num_frames: usize, num_bins: usize, kernel: usize) {
     let half = kernel / 2;
     let mut temp = vec![0.0f64; num_frames];
 
@@ -584,12 +611,7 @@ fn smooth_mask_time(
 }
 
 /// Smooth mask along the frequency axis using a moving average.
-fn smooth_mask_frequency(
-    mask: &mut [Vec<f64>],
-    num_frames: usize,
-    num_bins: usize,
-    kernel: usize,
-) {
+fn smooth_mask_frequency(mask: &mut [Vec<f64>], num_frames: usize, num_bins: usize, kernel: usize) {
     let half = kernel / 2;
     let mut temp = vec![0.0f64; num_bins];
 
@@ -635,8 +657,16 @@ mod tests {
             .map(|i| 0.5 * (2.0 * PI * 1000.0 * i as f64 / sr).sin())
             .collect();
 
-        let left: Vec<f64> = vocal.iter().zip(instrument.iter()).map(|(&v, &i)| v + i).collect();
-        let right: Vec<f64> = vocal.iter().zip(instrument.iter()).map(|(&v, &_i)| v).collect();
+        let left: Vec<f64> = vocal
+            .iter()
+            .zip(instrument.iter())
+            .map(|(&v, &i)| v + i)
+            .collect();
+        let right: Vec<f64> = vocal
+            .iter()
+            .zip(instrument.iter())
+            .map(|(&v, &_i)| v)
+            .collect();
 
         let result = extract_center_channel(&left, &right);
 
@@ -644,10 +674,7 @@ mod tests {
         let center_energy: f64 = result.center.iter().map(|s| s * s).sum();
         let vocal_energy: f64 = vocal.iter().map(|s| s * s).sum();
 
-        assert!(
-            center_energy > 0.0,
-            "Center should have energy"
-        );
+        assert!(center_energy > 0.0, "Center should have energy");
 
         // SDR of center vs vocal
         let sdr = compute_sdr(&vocal, &result.center);
@@ -804,7 +831,11 @@ mod tests {
             .map(|i| 0.5 * (2.0 * PI * 2500.0 * i as f64 / sr).sin())
             .collect();
 
-        let mixed: Vec<f64> = vocal.iter().zip(noise.iter()).map(|(&v, &n)| v + n).collect();
+        let mixed: Vec<f64> = vocal
+            .iter()
+            .zip(noise.iter())
+            .map(|(&v, &n)| v + n)
+            .collect();
 
         // Number of frames
         let num_frames = (n - 4096) / hop + 1;
@@ -921,7 +952,10 @@ mod tests {
 
         // SDR of signal vs itself
         let sdr_perfect = compute_sdr(&signal, &signal);
-        assert!(sdr_perfect > 90.0, "SDR of identical signals should be very high");
+        assert!(
+            sdr_perfect > 90.0,
+            "SDR of identical signals should be very high"
+        );
 
         // SDR of signal vs noisy version
         let noisy: Vec<f64> = signal
@@ -950,7 +984,11 @@ mod tests {
             .map(|i| 0.5 * (2.0 * PI * 1500.0 * i as f64 / sr).sin())
             .collect();
 
-        let left: Vec<f64> = vocal.iter().zip(instrument.iter()).map(|(&v, &i)| v + i).collect();
+        let left: Vec<f64> = vocal
+            .iter()
+            .zip(instrument.iter())
+            .map(|(&v, &i)| v + i)
+            .collect();
         let right = vocal.clone();
 
         let config = VocalIsolationConfig {
@@ -995,7 +1033,11 @@ mod tests {
             .collect();
 
         // Vocal centered, instrument panned
-        let left: Vec<f64> = vocal.iter().zip(instrument.iter()).map(|(&v, &i)| v + i).collect();
+        let left: Vec<f64> = vocal
+            .iter()
+            .zip(instrument.iter())
+            .map(|(&v, &i)| v + i)
+            .collect();
         let right: Vec<f64> = vocal.iter().map(|&v| v).collect();
 
         let num_frames = (n - 4096) / hop + 1;
@@ -1011,6 +1053,9 @@ mod tests {
         let result = isolate_vocal_stereo(&left, &right, &pitch_contour, &config);
 
         let vocal_energy: f64 = result.vocal.iter().map(|s| s * s).sum();
-        assert!(vocal_energy > 0.0, "Stereo vocal isolation should produce output");
+        assert!(
+            vocal_energy > 0.0,
+            "Stereo vocal isolation should produce output"
+        );
     }
 }

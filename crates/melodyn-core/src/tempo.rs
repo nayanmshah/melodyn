@@ -233,7 +233,10 @@ pub fn estimate_tempo(
 
 /// Simpler tempo estimation using inter-onset intervals (IOIs).
 /// Clusters IOIs and returns the most common tempo.
-pub fn estimate_tempo_from_ioi(onsets: &[OnsetEvent], range: &TempoDetectionRange) -> Option<TempoPeriod> {
+pub fn estimate_tempo_from_ioi(
+    onsets: &[OnsetEvent],
+    range: &TempoDetectionRange,
+) -> Option<TempoPeriod> {
     if onsets.len() < 3 {
         return None;
     }
@@ -359,7 +362,12 @@ impl BeatGrid {
     }
 
     /// Find the beat grid phase that best aligns with detected onsets.
-    pub fn align_to_onsets(bpm: f64, beats_per_bar: u8, onsets: &[OnsetEvent], duration: f64) -> Self {
+    pub fn align_to_onsets(
+        bpm: f64,
+        beats_per_bar: u8,
+        onsets: &[OnsetEvent],
+        duration: f64,
+    ) -> Self {
         let period = 60.0 / bpm;
         let num_phases = 32;
         let phase_step = period / num_phases as f64;
@@ -399,10 +407,7 @@ impl BeatGrid {
 
     /// Get the beat at or just before a given time.
     pub fn beat_at(&self, time: f64) -> Option<&AnalyzedBeat> {
-        self.beats
-            .iter()
-            .rev()
-            .find(|b| b.time <= time)
+        self.beats.iter().rev().find(|b| b.time <= time)
     }
 
     /// Get all downbeats.
@@ -451,10 +456,7 @@ impl BarSignature {
 /// Detect time signature from onsets and tempo.
 ///
 /// Checks whether downbeat accents align better with groups of 2, 3, or 4 beats.
-pub fn detect_time_signature(
-    onsets: &[OnsetEvent],
-    bpm: f64,
-) -> BarSignature {
+pub fn detect_time_signature(onsets: &[OnsetEvent], bpm: f64) -> BarSignature {
     if onsets.len() < 4 {
         return BarSignature::four_four();
     }
@@ -547,10 +549,7 @@ pub struct TempoPoint {
 
 /// Extract a tempo curve from onset events, tracking how tempo varies over time.
 /// Uses a sliding window of IOIs.
-pub fn extract_tempo_curve(
-    onsets: &[OnsetEvent],
-    window_size: usize,
-) -> Vec<TempoPoint> {
+pub fn extract_tempo_curve(onsets: &[OnsetEvent], window_size: usize) -> Vec<TempoPoint> {
     if onsets.len() < window_size + 1 {
         return vec![];
     }
@@ -576,9 +575,8 @@ pub fn extract_tempo_curve(
         let median_ioi = iois[iois.len() / 2];
         let bpm = 60.0 / median_ioi;
 
-        let center_time = (window_onsets.first().unwrap().time
-            + window_onsets.last().unwrap().time)
-            / 2.0;
+        let center_time =
+            (window_onsets.first().unwrap().time + window_onsets.last().unwrap().time) / 2.0;
 
         curve.push(TempoPoint {
             time: center_time,
@@ -767,20 +765,12 @@ impl TempoAnalyzer {
     }
 
     /// Analyze tempo from detected notes.
-    pub fn analyze_notes(
-        &self,
-        notes: &[DetectedNote],
-        duration: f64,
-    ) -> TempoAnalysisResult {
+    pub fn analyze_notes(&self, notes: &[DetectedNote], duration: f64) -> TempoAnalysisResult {
         let onsets = detect_onsets_from_notes(notes);
         self.analyze_from_onsets(onsets, duration)
     }
 
-    fn analyze_from_onsets(
-        &self,
-        onsets: Vec<OnsetEvent>,
-        duration: f64,
-    ) -> TempoAnalysisResult {
+    fn analyze_from_onsets(&self, onsets: Vec<OnsetEvent>, duration: f64) -> TempoAnalysisResult {
         // Estimate tempo
         let tempo_candidates = estimate_tempo(&onsets, &self.config.range, duration);
         let primary_tempo = tempo_candidates.first().copied();
@@ -1015,14 +1005,8 @@ mod tests {
 
     #[test]
     fn test_format_time_signature() {
-        assert_eq!(
-            format_time_signature(&BarSignature::four_four()),
-            "4/4"
-        );
-        assert_eq!(
-            format_time_signature(&BarSignature::three_four()),
-            "3/4"
-        );
+        assert_eq!(format_time_signature(&BarSignature::four_four()), "4/4");
+        assert_eq!(format_time_signature(&BarSignature::three_four()), "3/4");
     }
 
     #[test]
@@ -1035,8 +1019,8 @@ mod tests {
     fn test_quantize_to_grid() {
         let grid = BeatGrid::generate(120.0, 4, 0.0, 4.0, 0.0);
         let notes = vec![
-            make_note(60.0, 0.03, 0.4, 0.8),  // slightly after beat 0
-            make_note(64.0, 0.52, 0.4, 0.6),  // slightly after beat 1
+            make_note(60.0, 0.03, 0.4, 0.8), // slightly after beat 0
+            make_note(64.0, 0.52, 0.4, 0.6), // slightly after beat 1
         ];
         let quantized = quantize_to_grid(&notes, &grid);
         assert_eq!(quantized.len(), 2);

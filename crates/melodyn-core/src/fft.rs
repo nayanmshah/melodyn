@@ -40,8 +40,7 @@ pub fn compute_window(window_type: WindowType, len: usize) -> Vec<f64> {
                     let a1 = 0.48829;
                     let a2 = 0.14128;
                     let a3 = 0.01168;
-                    a0 - a1 * (2.0 * PI * x / n).cos()
-                        + a2 * (4.0 * PI * x / n).cos()
+                    a0 - a1 * (2.0 * PI * x / n).cos() + a2 * (4.0 * PI * x / n).cos()
                         - a3 * (6.0 * PI * x / n).cos()
                 }
                 WindowType::Hamming => 0.54 - 0.46 * (2.0 * PI * x / n).cos(),
@@ -398,7 +397,9 @@ mod tests {
     fn test_fft_roundtrip() {
         let engine = FftEngine::new(1024, WindowType::Rectangular);
         // Use rectangular window so roundtrip is exact
-        let input: Vec<f64> = (0..1024).map(|i| (2.0 * PI * i as f64 / 1024.0).sin()).collect();
+        let input: Vec<f64> = (0..1024)
+            .map(|i| (2.0 * PI * i as f64 / 1024.0).sin())
+            .collect();
         let spectrum = engine.forward(&input);
         let reconstructed = engine.inverse_real(&spectrum);
         for (a, b) in input.iter().zip(reconstructed.iter()) {

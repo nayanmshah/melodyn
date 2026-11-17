@@ -65,7 +65,10 @@ impl TransportInfo {
         self.position_samples += num_samples as u64;
         self.position_seconds = self.position_samples as f64 / self.sample_rate;
 
-        if self.loop_enabled && self.position_seconds >= self.loop_end && self.loop_end > self.loop_start {
+        if self.loop_enabled
+            && self.position_seconds >= self.loop_end
+            && self.loop_end > self.loop_start
+        {
             let loop_len = self.loop_end - self.loop_start;
             self.position_seconds =
                 self.loop_start + (self.position_seconds - self.loop_start) % loop_len;
@@ -196,12 +199,7 @@ pub type NodeId = u64;
 /// Audio processing node trait.
 pub trait AudioNode: Send {
     /// Process audio: read from inputs, write to outputs.
-    fn process(
-        &mut self,
-        inputs: &[&[f64]],
-        outputs: &mut [&mut [f64]],
-        info: &AudioRenderInfo,
-    );
+    fn process(&mut self, inputs: &[&[f64]], outputs: &mut [&mut [f64]], info: &AudioRenderInfo);
     /// Number of input channels.
     fn num_inputs(&self) -> usize;
     /// Number of output channels.
@@ -343,8 +341,7 @@ impl AudioGraph {
 
             for conn in &input_conns {
                 if let Some(src_bufs) = self.buffers.get(&conn.source_id) {
-                    if conn.source_channel < src_bufs.len()
-                        && conn.dest_channel < input_bufs.len()
+                    if conn.source_channel < src_bufs.len() && conn.dest_channel < input_bufs.len()
                     {
                         for i in 0..buffer_size {
                             input_bufs[conn.dest_channel][i] += src_bufs[conn.source_channel][i];
@@ -437,8 +434,7 @@ impl PlaybackController {
 
     pub fn seek(&mut self, position_seconds: f64) {
         self.transport.position_seconds = position_seconds;
-        self.transport.position_samples =
-            (position_seconds * self.transport.sample_rate) as u64;
+        self.transport.position_samples = (position_seconds * self.transport.sample_rate) as u64;
         self.position
             .store(self.transport.position_samples, Ordering::Release);
     }
@@ -600,7 +596,10 @@ impl PerformanceRenderer {
             self.graph.process(&info);
         }
 
-        (&self.output_buffer_l[..buffer_size], &self.output_buffer_r[..buffer_size])
+        (
+            &self.output_buffer_l[..buffer_size],
+            &self.output_buffer_r[..buffer_size],
+        )
     }
 
     /// Reset the renderer state.
@@ -628,12 +627,7 @@ impl SilenceNode {
 }
 
 impl AudioNode for SilenceNode {
-    fn process(
-        &mut self,
-        _inputs: &[&[f64]],
-        outputs: &mut [&mut [f64]],
-        _info: &AudioRenderInfo,
-    ) {
+    fn process(&mut self, _inputs: &[&[f64]], outputs: &mut [&mut [f64]], _info: &AudioRenderInfo) {
         for out in outputs.iter_mut() {
             out.fill(0.0);
         }
@@ -662,12 +656,7 @@ impl GainNode {
 }
 
 impl AudioNode for GainNode {
-    fn process(
-        &mut self,
-        inputs: &[&[f64]],
-        outputs: &mut [&mut [f64]],
-        _info: &AudioRenderInfo,
-    ) {
+    fn process(&mut self, inputs: &[&[f64]], outputs: &mut [&mut [f64]], _info: &AudioRenderInfo) {
         for (ch, out) in outputs.iter_mut().enumerate() {
             if ch < inputs.len() {
                 for (i, sample) in out.iter_mut().enumerate() {
@@ -700,12 +689,7 @@ impl MixerNode {
 }
 
 impl AudioNode for MixerNode {
-    fn process(
-        &mut self,
-        inputs: &[&[f64]],
-        outputs: &mut [&mut [f64]],
-        _info: &AudioRenderInfo,
-    ) {
+    fn process(&mut self, inputs: &[&[f64]], outputs: &mut [&mut [f64]], _info: &AudioRenderInfo) {
         for out in outputs.iter_mut() {
             out.fill(0.0);
         }
@@ -752,12 +736,7 @@ impl BufferSourceNode {
 }
 
 impl AudioNode for BufferSourceNode {
-    fn process(
-        &mut self,
-        _inputs: &[&[f64]],
-        outputs: &mut [&mut [f64]],
-        _info: &AudioRenderInfo,
-    ) {
+    fn process(&mut self, _inputs: &[&[f64]], outputs: &mut [&mut [f64]], _info: &AudioRenderInfo) {
         if self.samples.is_empty() {
             for out in outputs.iter_mut() {
                 out.fill(0.0);

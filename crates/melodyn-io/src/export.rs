@@ -374,7 +374,11 @@ pub fn read_raw_pcm<P: AsRef<Path>>(
         if offset + bytes_per_sample > data.len() {
             break;
         }
-        let sample = read_pcm_sample(&data[offset..offset + bytes_per_sample], bits_per_sample, little_endian);
+        let sample = read_pcm_sample(
+            &data[offset..offset + bytes_per_sample],
+            bits_per_sample,
+            little_endian,
+        );
         interleaved.push(sample);
         offset += bytes_per_sample;
     }
@@ -681,9 +685,7 @@ mod tests {
 
     #[test]
     fn test_config_builder_methods() {
-        let config = ExportConfig::wav_16bit()
-            .with_normalize(0.95)
-            .with_dither();
+        let config = ExportConfig::wav_16bit().with_normalize(0.95).with_dither();
 
         assert!(config.normalize);
         assert!((config.normalize_target - 0.95).abs() < 1e-10);

@@ -461,17 +461,16 @@ impl TurkishMakam {
         let mut best_idx = 0;
         let mut best_dist = 53i32;
         for (i, &deg) in self.degrees.iter().enumerate() {
-            let dist = ((comma_in_octave as i32 - deg as i32).abs()).min(
-                53 - (comma_in_octave as i32 - deg as i32).abs(),
-            );
+            let dist = ((comma_in_octave as i32 - deg as i32).abs())
+                .min(53 - (comma_in_octave as i32 - deg as i32).abs());
             if dist < best_dist {
                 best_dist = dist;
                 best_idx = i;
             }
         }
 
-        let deviation_cents = (comma_in_octave as f64 - self.degrees[best_idx] as f64)
-            * (1200.0 / 53.0);
+        let deviation_cents =
+            (comma_in_octave as f64 - self.degrees[best_idx] as f64) * (1200.0 / 53.0);
         Some((best_idx, deviation_cents))
     }
 }
@@ -502,7 +501,9 @@ pub fn match_gamelan_degree(
     let mut best_idx = 0;
     let mut best_dist = f64::MAX;
     for (i, &sc) in scale_cents.iter().enumerate() {
-        let dist = (cents_in_octave - sc).abs().min((cents_in_octave - sc + 1200.0).abs());
+        let dist = (cents_in_octave - sc)
+            .abs()
+            .min((cents_in_octave - sc + 1200.0).abs());
         let dist = dist.min((cents_in_octave - sc - 1200.0).abs());
         if dist < best_dist {
             best_dist = dist;
@@ -603,18 +604,18 @@ impl ScaleTuning {
         Self {
             name: "Pythagorean".to_string(),
             offsets: [
-                0.0,    // C
-                -9.78,  // Db
-                3.91,   // D
-                -5.87,  // Eb
-                7.82,   // E
-                -1.96,  // F
-                11.73,  // F#
-                1.96,   // G
-                -7.82,  // Ab
-                5.87,   // A
-                -3.91,  // Bb
-                9.78,   // B
+                0.0,   // C
+                -9.78, // Db
+                3.91,  // D
+                -5.87, // Eb
+                7.82,  // E
+                -1.96, // F
+                11.73, // F#
+                1.96,  // G
+                -7.82, // Ab
+                5.87,  // A
+                -3.91, // Bb
+                9.78,  // B
             ],
         }
     }
@@ -721,12 +722,12 @@ mod tests {
     #[test]
     fn test_diatonic_degree_mask() {
         let mask = DiatonicDegreeMask::from_scale(0, ScaleMode::Ionian);
-        assert!(mask.contains(0));  // C
-        assert!(mask.contains(2));  // D
-        assert!(mask.contains(4));  // E
-        assert!(mask.contains(5));  // F
-        assert!(mask.contains(7));  // G
-        assert!(mask.contains(9));  // A
+        assert!(mask.contains(0)); // C
+        assert!(mask.contains(2)); // D
+        assert!(mask.contains(4)); // E
+        assert!(mask.contains(5)); // F
+        assert!(mask.contains(7)); // G
+        assert!(mask.contains(9)); // A
         assert!(mask.contains(11)); // B
         assert!(!mask.contains(1)); // C# not in C major
         assert_eq!(mask.count(), 7);
@@ -793,7 +794,8 @@ mod tests {
         // Exact scale tone should match with minimal deviation
         let reference = 440.0;
         let scale_tone_freq = reference * 2.0f64.powf(240.0 / 1200.0); // 2nd degree
-        let (deg, dev) = match_gamelan_degree(scale_tone_freq, reference, &GAMELAN_SLENDRO_CENTS).unwrap();
+        let (deg, dev) =
+            match_gamelan_degree(scale_tone_freq, reference, &GAMELAN_SLENDRO_CENTS).unwrap();
         assert_eq!(deg, 1);
         assert!(dev.abs() < 5.0, "Deviation should be small: {}", dev);
     }

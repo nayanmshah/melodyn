@@ -8,14 +8,14 @@
 use std::collections::HashSet;
 
 use eframe::egui;
+use melodyn_core::playback::{NoteEditSnapshot, PlaybackEngine};
+use melodyn_core::scale::{detect_key, distribution_from_notes};
+use melodyn_core::tempo::BeatGrid;
 use melodyn_core::{
     AnalysisConfig, AnalysisResult, DetectedNote, DetectionPreset, PitchCandidate,
     SpectralAnalyzer, TempoAnalyzer, TempoAnalyzerConfig,
 };
-use melodyn_core::playback::{NoteEditSnapshot, PlaybackEngine};
-use melodyn_core::scale::{detect_key, distribution_from_notes};
-use melodyn_core::tempo::BeatGrid;
-use melodyn_io::{AudioBuffer, read_wav, write_wav, WavWriteConfig};
+use melodyn_io::{read_wav, write_wav, AudioBuffer, WavWriteConfig};
 
 use crate::clipboard::Clipboard;
 use crate::tools::{SnapMode, Tool};
@@ -520,19 +520,12 @@ fn export_wav_with_edits(state: &AppState, path: &str) {
     };
 
     // Collect note edit snapshots
-    let snapshots: Vec<NoteEditSnapshot> = state
-        .notes
-        .iter()
-        .map(|n| n.to_edit_snapshot())
-        .collect();
+    let snapshots: Vec<NoteEditSnapshot> =
+        state.notes.iter().map(|n| n.to_edit_snapshot()).collect();
 
     // Render offline mix with edits applied
-    let (out_left, out_right) = PlaybackEngine::render_offline_mix(
-        &left,
-        &right,
-        &snapshots,
-        state.sample_rate,
-    );
+    let (out_left, out_right) =
+        PlaybackEngine::render_offline_mix(&left, &right, &snapshots, state.sample_rate);
 
     // Build an AudioBuffer and write
     let out_buffer = AudioBuffer::from_stereo(out_left, out_right, state.sample_rate);
@@ -565,26 +558,17 @@ pub fn menu_bar(ui: &mut egui::Ui, state: &mut AppState, engine: &mut Option<Pla
                     .add_filter("All files", &["*"])
                     .pick_file()
                 {
-                    if let Some((left, right, sr)) =
-                        open_file(state, &path.to_string_lossy())
-                    {
+                    if let Some((left, right, sr)) = open_file(state, &path.to_string_lossy()) {
                         let new_engine = PlaybackEngine::new(left, right, sr);
                         new_engine.set_volume(state.volume);
-                        new_engine.set_loop(
-                            state.loop_enabled,
-                            state.loop_start,
-                            state.loop_end,
-                        );
+                        new_engine.set_loop(state.loop_enabled, state.loop_start, state.loop_end);
                         *engine = Some(new_engine);
                     }
                 }
             }
 
             if ui
-                .add(
-                    egui::Button::new("Export WAV...")
-                        .shortcut_text("Ctrl+Shift+E"),
-                )
+                .add(egui::Button::new("Export WAV...").shortcut_text("Ctrl+Shift+E"))
                 .clicked()
             {
                 ui.close_menu();
@@ -594,8 +578,7 @@ pub fn menu_bar(ui: &mut egui::Ui, state: &mut AppState, engine: &mut Option<Pla
                         .save_file()
                     {
                         export_wav_with_edits(state, &path.to_string_lossy());
-                        state.status_message =
-                            format!("Exported to {}", path.display());
+                        state.status_message = format!("Exported to {}", path.display());
                     }
                 }
             }
@@ -676,20 +659,14 @@ pub fn menu_bar(ui: &mut egui::Ui, state: &mut AppState, engine: &mut Option<Pla
             }
             ui.separator();
             if ui
-                .add(
-                    egui::Button::new("Zoom Vertical In")
-                        .shortcut_text("Ctrl+Shift+="),
-                )
+                .add(egui::Button::new("Zoom Vertical In").shortcut_text("Ctrl+Shift+="))
                 .clicked()
             {
                 state.pitch_scale = (state.pitch_scale * 1.25).min(60.0);
                 ui.close_menu();
             }
             if ui
-                .add(
-                    egui::Button::new("Zoom Vertical Out")
-                        .shortcut_text("Ctrl+Shift+-"),
-                )
+                .add(egui::Button::new("Zoom Vertical Out").shortcut_text("Ctrl+Shift+-"))
                 .clicked()
             {
                 state.pitch_scale = (state.pitch_scale / 1.25).max(4.0);
@@ -767,10 +744,8 @@ impl MelodynApp {
             // Check if engine stopped itself (e.g., reached end of audio)
             if !engine.shared_state().is_playing() {
                 self.state.playing = false;
-                self.state.status_message = format!(
-                    "Stopped at {:.2}s",
-                    self.state.playback_position
-                );
+                self.state.status_message =
+                    format!("Stopped at {:.2}s", self.state.playback_position);
             }
 
             // Feed audio into the ring buffer
@@ -795,10 +770,7 @@ impl MelodynApp {
         if let Some(ref engine) = self.playback_engine {
             engine.pause();
         }
-        self.state.status_message = format!(
-            "Stopped at {:.2}s",
-            self.state.playback_position
-        );
+        self.state.status_message = format!("Stopped at {:.2}s", self.state.playback_position);
     }
 
     /// Handle files dropped onto the application window.
@@ -808,17 +780,14 @@ impl MelodynApp {
         self.state.drop_hover = has_hover;
 
         // Check for dropped files
-        let dropped: Vec<egui::DroppedFile> =
-            ctx.input(|i| i.raw.dropped_files.clone());
+        let dropped: Vec<egui::DroppedFile> = ctx.input(|i| i.raw.dropped_files.clone());
 
         for file in &dropped {
             if let Some(ref path) = file.path {
                 let path_str = path.to_string_lossy();
                 // Only accept .wav files
                 if path_str.to_lowercase().ends_with(".wav") {
-                    if let Some((left, right, sr)) =
-                        open_file(&mut self.state, &path_str)
-                    {
+                    if let Some((left, right, sr)) = open_file(&mut self.state, &path_str) {
                         let new_engine = PlaybackEngine::new(left, right, sr);
                         new_engine.set_volume(self.state.volume);
                         self.playback_engine = Some(new_engine);
@@ -975,8 +944,7 @@ impl MelodynApp {
                 .add_filter("WAV files", &["wav"])
                 .pick_file()
             {
-                if let Some((left, right, sr)) =
-                    open_file(&mut self.state, &path.to_string_lossy())
+                if let Some((left, right, sr)) = open_file(&mut self.state, &path.to_string_lossy())
                 {
                     let new_engine = PlaybackEngine::new(left, right, sr);
                     new_engine.set_volume(self.state.volume);
@@ -1022,11 +990,8 @@ impl MelodynApp {
             let count = clipboard.len();
             self.state.clipboard = clipboard;
             if count > 0 {
-                self.state.status_message = format!(
-                    "Copied {} note{}",
-                    count,
-                    if count > 1 { "s" } else { "" }
-                );
+                self.state.status_message =
+                    format!("Copied {} note{}", count, if count > 1 { "s" } else { "" });
             }
         }
         if do_cut {
@@ -1181,11 +1146,7 @@ impl eframe::App for MelodynApp {
             .default_width(200.0)
             .min_width(150.0)
             .show(ctx, |ui| {
-                crate::tracks::track_list_panel(
-                    ui,
-                    &mut track_list,
-                    &mut self.state,
-                );
+                crate::tracks::track_list_panel(ui, &mut track_list, &mut self.state);
             });
         self.state.track_list = track_list;
 

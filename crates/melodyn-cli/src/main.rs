@@ -11,9 +11,7 @@ use melodyn_core::{
     SpectralAnalyzer,
 };
 use melodyn_io::{read_wav, wav_info, write_wav, AudioBuffer, WavWriteConfig};
-use melodyn_synth::{
-    LssCorrelator, LssGenerator, LssGeneratorConfig,
-};
+use melodyn_synth::{LssCorrelator, LssGenerator, LssGeneratorConfig};
 
 // ---------------------------------------------------------------------------
 // CLI definition

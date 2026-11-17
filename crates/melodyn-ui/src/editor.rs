@@ -110,7 +110,8 @@ fn draw_piano_keyboard(painter: &egui::Painter, rect: Rect, state: &AppState) {
     painter.rect_filled(rect, 0.0, Color32::from_rgb(50, 50, 55));
 
     let bottom_midi = state.pitch_offset.floor() as i32 - 1;
-    let top_midi = (state.pitch_offset + rect.height() as f64 / state.pitch_scale).ceil() as i32 + 1;
+    let top_midi =
+        (state.pitch_offset + rect.height() as f64 / state.pitch_scale).ceil() as i32 + 1;
 
     let black_notes: [i32; 5] = [1, 3, 6, 8, 10]; // C#, D#, F#, G#, A#
 
@@ -134,7 +135,10 @@ fn draw_piano_keyboard(painter: &egui::Painter, rect: Rect, state: &AppState) {
         let fill = if is_black { PIANO_BLACK } else { PIANO_WHITE };
         painter.rect_filled(key_rect, 0.0, fill);
         painter.line_segment(
-            [Pos2::new(rect.left(), y_bot), Pos2::new(rect.right(), y_bot)],
+            [
+                Pos2::new(rect.left(), y_bot),
+                Pos2::new(rect.right(), y_bot),
+            ],
             Stroke::new(0.5_f32, PIANO_LINE),
         );
 
@@ -165,7 +169,8 @@ fn draw_grid(painter: &egui::Painter, rect: Rect, state: &AppState) {
 
     // Horizontal lines: one per semitone
     let bottom_midi = state.pitch_offset.floor() as i32 - 1;
-    let top_midi = (state.pitch_offset + rect.height() as f64 / state.pitch_scale).ceil() as i32 + 1;
+    let top_midi =
+        (state.pitch_offset + rect.height() as f64 / state.pitch_scale).ceil() as i32 + 1;
 
     let black_notes: [i32; 5] = [1, 3, 6, 8, 10];
 
@@ -183,7 +188,11 @@ fn draw_grid(painter: &egui::Painter, rect: Rect, state: &AppState) {
                 Pos2::new(rect.left(), y_top),
                 Pos2::new(rect.right(), y_bot),
             );
-            painter.rect_filled(shade_rect, 0.0, Color32::from_rgba_premultiplied(0, 0, 0, 20));
+            painter.rect_filled(
+                shade_rect,
+                0.0,
+                Color32::from_rgba_premultiplied(0, 0, 0, 20),
+            );
         }
         // C notes get a brighter line
         let stroke = if pc == 0 {
@@ -315,7 +324,10 @@ fn draw_notes(painter: &egui::Painter, rect: Rect, state: &AppState) {
         let y_center = midi_to_y(note.effective_midi(), rect, state);
         if y_center >= nr.top() && y_center <= nr.bottom() {
             painter.line_segment(
-                [Pos2::new(nr.left() + 2.0, y_center), Pos2::new(nr.right() - 2.0, y_center)],
+                [
+                    Pos2::new(nr.left() + 2.0, y_center),
+                    Pos2::new(nr.right() - 2.0, y_center),
+                ],
                 Stroke::new(0.5_f32, Color32::from_rgba_premultiplied(255, 255, 255, 60)),
             );
         }
@@ -346,12 +358,7 @@ fn draw_playback_cursor(painter: &egui::Painter, rect: Rect, state: &AppState) {
 // ---------------------------------------------------------------------------
 
 /// Handle mouse interactions in the editor area.
-fn handle_editor_input(
-    response: &egui::Response,
-    rect: Rect,
-    state: &mut AppState,
-    ui: &egui::Ui,
-) {
+fn handle_editor_input(response: &egui::Response, rect: Rect, state: &mut AppState, ui: &egui::Ui) {
     let modifiers = ui.input(|i| i.modifiers);
 
     // Update hovered note
@@ -401,7 +408,10 @@ fn handle_editor_input(
                 .iter()
                 .map(|&i| {
                     if i < state.notes.len() {
-                        (state.notes[i].effective_midi(), state.notes[i].effective_start())
+                        (
+                            state.notes[i].effective_midi(),
+                            state.notes[i].effective_start(),
+                        )
                     } else {
                         (0.0, 0.0)
                     }
@@ -425,7 +435,8 @@ fn handle_editor_input(
             for idx in selected {
                 if idx < state.notes.len() {
                     let raw_midi = state.notes[idx].effective_midi();
-                    let snapped = tools::snap_pitch(raw_midi, state.snap_mode, state.detected_key_tonic);
+                    let snapped =
+                        tools::snap_pitch(raw_midi, state.snap_mode, state.detected_key_tonic);
                     state.notes[idx].pitch_offset += snapped - raw_midi;
 
                     let raw_time = state.notes[idx].effective_start();
@@ -451,7 +462,8 @@ fn handle_editor_input(
                     let time_at_cursor = x_to_time(cursor.x, rect, state);
                     state.time_scale = (state.time_scale * factor).clamp(20.0, 2000.0);
                     // Adjust offset so cursor stays at same time
-                    state.time_offset = time_at_cursor - (cursor.x - rect.left()) as f64 / state.time_scale;
+                    state.time_offset =
+                        time_at_cursor - (cursor.x - rect.left()) as f64 / state.time_scale;
                 }
             } else {
                 // Scroll: vertical = pitch, horizontal/shift = time

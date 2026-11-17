@@ -160,19 +160,23 @@ impl BinaryKeyValueArchive {
     // -- Setters --
 
     pub fn set_i32(&mut self, key: &str, value: i32) {
-        self.entries.insert(key.to_string(), ArchiveValue::I32(value));
+        self.entries
+            .insert(key.to_string(), ArchiveValue::I32(value));
     }
 
     pub fn set_i64(&mut self, key: &str, value: i64) {
-        self.entries.insert(key.to_string(), ArchiveValue::I64(value));
+        self.entries
+            .insert(key.to_string(), ArchiveValue::I64(value));
     }
 
     pub fn set_f32(&mut self, key: &str, value: f32) {
-        self.entries.insert(key.to_string(), ArchiveValue::F32(value));
+        self.entries
+            .insert(key.to_string(), ArchiveValue::F32(value));
     }
 
     pub fn set_f64(&mut self, key: &str, value: f64) {
-        self.entries.insert(key.to_string(), ArchiveValue::F64(value));
+        self.entries
+            .insert(key.to_string(), ArchiveValue::F64(value));
     }
 
     pub fn set_bool(&mut self, key: &str, value: bool) {
@@ -204,7 +208,10 @@ impl BinaryKeyValueArchive {
     pub fn get_i32(&self, key: &str) -> ArchiveResult<i32> {
         match self.entries.get(key) {
             Some(ArchiveValue::I32(v)) => Ok(*v),
-            Some(other) => Err(ArchiveError::TypeMismatch(key.to_string(), other.type_name())),
+            Some(other) => Err(ArchiveError::TypeMismatch(
+                key.to_string(),
+                other.type_name(),
+            )),
             None => Err(ArchiveError::KeyNotFound(key.to_string())),
         }
     }
@@ -212,7 +219,10 @@ impl BinaryKeyValueArchive {
     pub fn get_i64(&self, key: &str) -> ArchiveResult<i64> {
         match self.entries.get(key) {
             Some(ArchiveValue::I64(v)) => Ok(*v),
-            Some(other) => Err(ArchiveError::TypeMismatch(key.to_string(), other.type_name())),
+            Some(other) => Err(ArchiveError::TypeMismatch(
+                key.to_string(),
+                other.type_name(),
+            )),
             None => Err(ArchiveError::KeyNotFound(key.to_string())),
         }
     }
@@ -220,7 +230,10 @@ impl BinaryKeyValueArchive {
     pub fn get_f32(&self, key: &str) -> ArchiveResult<f32> {
         match self.entries.get(key) {
             Some(ArchiveValue::F32(v)) => Ok(*v),
-            Some(other) => Err(ArchiveError::TypeMismatch(key.to_string(), other.type_name())),
+            Some(other) => Err(ArchiveError::TypeMismatch(
+                key.to_string(),
+                other.type_name(),
+            )),
             None => Err(ArchiveError::KeyNotFound(key.to_string())),
         }
     }
@@ -228,7 +241,10 @@ impl BinaryKeyValueArchive {
     pub fn get_f64(&self, key: &str) -> ArchiveResult<f64> {
         match self.entries.get(key) {
             Some(ArchiveValue::F64(v)) => Ok(*v),
-            Some(other) => Err(ArchiveError::TypeMismatch(key.to_string(), other.type_name())),
+            Some(other) => Err(ArchiveError::TypeMismatch(
+                key.to_string(),
+                other.type_name(),
+            )),
             None => Err(ArchiveError::KeyNotFound(key.to_string())),
         }
     }
@@ -236,7 +252,10 @@ impl BinaryKeyValueArchive {
     pub fn get_bool(&self, key: &str) -> ArchiveResult<bool> {
         match self.entries.get(key) {
             Some(ArchiveValue::Bool(v)) => Ok(*v),
-            Some(other) => Err(ArchiveError::TypeMismatch(key.to_string(), other.type_name())),
+            Some(other) => Err(ArchiveError::TypeMismatch(
+                key.to_string(),
+                other.type_name(),
+            )),
             None => Err(ArchiveError::KeyNotFound(key.to_string())),
         }
     }
@@ -244,7 +263,10 @@ impl BinaryKeyValueArchive {
     pub fn get_string(&self, key: &str) -> ArchiveResult<&str> {
         match self.entries.get(key) {
             Some(ArchiveValue::Str(v)) => Ok(v.as_str()),
-            Some(other) => Err(ArchiveError::TypeMismatch(key.to_string(), other.type_name())),
+            Some(other) => Err(ArchiveError::TypeMismatch(
+                key.to_string(),
+                other.type_name(),
+            )),
             None => Err(ArchiveError::KeyNotFound(key.to_string())),
         }
     }
@@ -252,7 +274,10 @@ impl BinaryKeyValueArchive {
     pub fn get_bytes(&self, key: &str) -> ArchiveResult<&[u8]> {
         match self.entries.get(key) {
             Some(ArchiveValue::Bytes(v)) => Ok(v.as_slice()),
-            Some(other) => Err(ArchiveError::TypeMismatch(key.to_string(), other.type_name())),
+            Some(other) => Err(ArchiveError::TypeMismatch(
+                key.to_string(),
+                other.type_name(),
+            )),
             None => Err(ArchiveError::KeyNotFound(key.to_string())),
         }
     }
@@ -260,7 +285,10 @@ impl BinaryKeyValueArchive {
     pub fn get_nested(&self, key: &str) -> ArchiveResult<&BinaryKeyValueArchive> {
         match self.entries.get(key) {
             Some(ArchiveValue::Nested(v)) => Ok(v),
-            Some(other) => Err(ArchiveError::TypeMismatch(key.to_string(), other.type_name())),
+            Some(other) => Err(ArchiveError::TypeMismatch(
+                key.to_string(),
+                other.type_name(),
+            )),
             None => Err(ArchiveError::KeyNotFound(key.to_string())),
         }
     }
@@ -320,36 +348,50 @@ impl BinaryKeyValueArchive {
     /// Deserialize from a reader.
     pub fn read_from<R: Read>(reader: &mut R) -> ArchiveResult<Self> {
         let mut magic = [0u8; 4];
-        reader.read_exact(&mut magic).map_err(|_| ArchiveError::Truncated)?;
+        reader
+            .read_exact(&mut magic)
+            .map_err(|_| ArchiveError::Truncated)?;
         if magic != BKVA_MAGIC {
             return Err(ArchiveError::InvalidMagic);
         }
         let mut version_buf = [0u8; 4];
-        reader.read_exact(&mut version_buf).map_err(|_| ArchiveError::Truncated)?;
+        reader
+            .read_exact(&mut version_buf)
+            .map_err(|_| ArchiveError::Truncated)?;
         let version = u32::from_le_bytes(version_buf);
         if version != BKVA_VERSION {
             return Err(ArchiveError::UnsupportedVersion(version));
         }
         let mut count_buf = [0u8; 4];
-        reader.read_exact(&mut count_buf).map_err(|_| ArchiveError::Truncated)?;
+        reader
+            .read_exact(&mut count_buf)
+            .map_err(|_| ArchiveError::Truncated)?;
         let count = u32::from_le_bytes(count_buf) as usize;
 
         let mut archive = Self::new();
         for _ in 0..count {
             let mut chunk_type = [0u8; 4];
-            reader.read_exact(&mut chunk_type).map_err(|_| ArchiveError::Truncated)?;
+            reader
+                .read_exact(&mut chunk_type)
+                .map_err(|_| ArchiveError::Truncated)?;
             if chunk_type != *b"KVPR" && chunk_type != *b"NEST" {
                 return Err(ArchiveError::InvalidChunkType(chunk_type));
             }
             let mut len_buf = [0u8; 4];
-            reader.read_exact(&mut len_buf).map_err(|_| ArchiveError::Truncated)?;
+            reader
+                .read_exact(&mut len_buf)
+                .map_err(|_| ArchiveError::Truncated)?;
             let payload_len = u32::from_le_bytes(len_buf) as usize;
 
             let mut payload = vec![0u8; payload_len];
-            reader.read_exact(&mut payload).map_err(|_| ArchiveError::Truncated)?;
+            reader
+                .read_exact(&mut payload)
+                .map_err(|_| ArchiveError::Truncated)?;
 
             let mut crc_buf = [0u8; 4];
-            reader.read_exact(&mut crc_buf).map_err(|_| ArchiveError::Truncated)?;
+            reader
+                .read_exact(&mut crc_buf)
+                .map_err(|_| ArchiveError::Truncated)?;
             let expected_crc = u32::from_le_bytes(crc_buf);
             let actual_crc = crc32(&payload);
             if expected_crc != actual_crc {
@@ -442,7 +484,9 @@ fn read_value_bytes<R: Read>(reader: &mut R, tag: u8) -> ArchiveResult<ArchiveVa
             let len = u32::from_le_bytes(len_buf) as usize;
             let mut data = vec![0u8; len];
             reader.read_exact(&mut data)?;
-            Ok(ArchiveValue::Str(String::from_utf8_lossy(&data).into_owned()))
+            Ok(ArchiveValue::Str(
+                String::from_utf8_lossy(&data).into_owned(),
+            ))
         }
         7 => {
             let mut len_buf = [0u8; 4];
@@ -511,7 +555,10 @@ impl XmlKeyValueArchive {
     pub fn get_i32(&self, key: &str) -> ArchiveResult<i32> {
         match self.entries.get(key) {
             Some(ArchiveValue::I32(v)) => Ok(*v),
-            Some(other) => Err(ArchiveError::TypeMismatch(key.to_string(), other.type_name())),
+            Some(other) => Err(ArchiveError::TypeMismatch(
+                key.to_string(),
+                other.type_name(),
+            )),
             None => Err(ArchiveError::KeyNotFound(key.to_string())),
         }
     }
@@ -519,7 +566,10 @@ impl XmlKeyValueArchive {
     pub fn get_f64(&self, key: &str) -> ArchiveResult<f64> {
         match self.entries.get(key) {
             Some(ArchiveValue::F64(v)) => Ok(*v),
-            Some(other) => Err(ArchiveError::TypeMismatch(key.to_string(), other.type_name())),
+            Some(other) => Err(ArchiveError::TypeMismatch(
+                key.to_string(),
+                other.type_name(),
+            )),
             None => Err(ArchiveError::KeyNotFound(key.to_string())),
         }
     }
@@ -527,7 +577,10 @@ impl XmlKeyValueArchive {
     pub fn get_string(&self, key: &str) -> ArchiveResult<&str> {
         match self.entries.get(key) {
             Some(ArchiveValue::Str(v)) => Ok(v.as_str()),
-            Some(other) => Err(ArchiveError::TypeMismatch(key.to_string(), other.type_name())),
+            Some(other) => Err(ArchiveError::TypeMismatch(
+                key.to_string(),
+                other.type_name(),
+            )),
             None => Err(ArchiveError::KeyNotFound(key.to_string())),
         }
     }
@@ -535,7 +588,10 @@ impl XmlKeyValueArchive {
     pub fn get_bool(&self, key: &str) -> ArchiveResult<bool> {
         match self.entries.get(key) {
             Some(ArchiveValue::Bool(v)) => Ok(*v),
-            Some(other) => Err(ArchiveError::TypeMismatch(key.to_string(), other.type_name())),
+            Some(other) => Err(ArchiveError::TypeMismatch(
+                key.to_string(),
+                other.type_name(),
+            )),
             None => Err(ArchiveError::KeyNotFound(key.to_string())),
         }
     }
@@ -606,27 +662,41 @@ fn write_xml_entry(out: &mut String, key: &str, value: &ArchiveValue, indent: us
     let pad: String = "  ".repeat(indent);
     match value {
         ArchiveValue::I32(v) => {
-            out.push_str(&format!("{pad}<entry key=\"{key}\" type=\"i32\">{v}</entry>\n"));
+            out.push_str(&format!(
+                "{pad}<entry key=\"{key}\" type=\"i32\">{v}</entry>\n"
+            ));
         }
         ArchiveValue::I64(v) => {
-            out.push_str(&format!("{pad}<entry key=\"{key}\" type=\"i64\">{v}</entry>\n"));
+            out.push_str(&format!(
+                "{pad}<entry key=\"{key}\" type=\"i64\">{v}</entry>\n"
+            ));
         }
         ArchiveValue::F32(v) => {
-            out.push_str(&format!("{pad}<entry key=\"{key}\" type=\"f32\">{v}</entry>\n"));
+            out.push_str(&format!(
+                "{pad}<entry key=\"{key}\" type=\"f32\">{v}</entry>\n"
+            ));
         }
         ArchiveValue::F64(v) => {
-            out.push_str(&format!("{pad}<entry key=\"{key}\" type=\"f64\">{v}</entry>\n"));
+            out.push_str(&format!(
+                "{pad}<entry key=\"{key}\" type=\"f64\">{v}</entry>\n"
+            ));
         }
         ArchiveValue::Bool(v) => {
-            out.push_str(&format!("{pad}<entry key=\"{key}\" type=\"bool\">{v}</entry>\n"));
+            out.push_str(&format!(
+                "{pad}<entry key=\"{key}\" type=\"bool\">{v}</entry>\n"
+            ));
         }
         ArchiveValue::Str(v) => {
             let escaped = xml_escape(v);
-            out.push_str(&format!("{pad}<entry key=\"{key}\" type=\"string\">{escaped}</entry>\n"));
+            out.push_str(&format!(
+                "{pad}<entry key=\"{key}\" type=\"string\">{escaped}</entry>\n"
+            ));
         }
         ArchiveValue::Bytes(v) => {
             let hex: String = v.iter().map(|b| format!("{b:02x}")).collect();
-            out.push_str(&format!("{pad}<entry key=\"{key}\" type=\"bytes\">{hex}</entry>\n"));
+            out.push_str(&format!(
+                "{pad}<entry key=\"{key}\" type=\"bytes\">{hex}</entry>\n"
+            ));
         }
         ArchiveValue::Nested(nested) => {
             out.push_str(&format!("{pad}<entry key=\"{key}\" type=\"nested\">\n"));
@@ -720,27 +790,31 @@ fn extract_content(tag: &str) -> String {
 fn parse_xml_value(type_str: &str, content: &str) -> ArchiveResult<ArchiveValue> {
     match type_str {
         "i32" => {
-            let v: i32 = content.trim().parse().map_err(|_| {
-                ArchiveError::XmlError(format!("invalid i32: {content}"))
-            })?;
+            let v: i32 = content
+                .trim()
+                .parse()
+                .map_err(|_| ArchiveError::XmlError(format!("invalid i32: {content}")))?;
             Ok(ArchiveValue::I32(v))
         }
         "i64" => {
-            let v: i64 = content.trim().parse().map_err(|_| {
-                ArchiveError::XmlError(format!("invalid i64: {content}"))
-            })?;
+            let v: i64 = content
+                .trim()
+                .parse()
+                .map_err(|_| ArchiveError::XmlError(format!("invalid i64: {content}")))?;
             Ok(ArchiveValue::I64(v))
         }
         "f32" => {
-            let v: f32 = content.trim().parse().map_err(|_| {
-                ArchiveError::XmlError(format!("invalid f32: {content}"))
-            })?;
+            let v: f32 = content
+                .trim()
+                .parse()
+                .map_err(|_| ArchiveError::XmlError(format!("invalid f32: {content}")))?;
             Ok(ArchiveValue::F32(v))
         }
         "f64" => {
-            let v: f64 = content.trim().parse().map_err(|_| {
-                ArchiveError::XmlError(format!("invalid f64: {content}"))
-            })?;
+            let v: f64 = content
+                .trim()
+                .parse()
+                .map_err(|_| ArchiveError::XmlError(format!("invalid f64: {content}")))?;
             Ok(ArchiveValue::F64(v))
         }
         "bool" => {
@@ -902,13 +976,17 @@ impl FileArchive {
     pub fn read_from<R: Read + Seek>(reader: &mut R) -> ArchiveResult<Self> {
         // Read and verify magic.
         let mut magic = [0u8; 8];
-        reader.read_exact(&mut magic).map_err(|_| ArchiveError::Truncated)?;
+        reader
+            .read_exact(&mut magic)
+            .map_err(|_| ArchiveError::Truncated)?;
         if magic != FILE_ARCHIVE_MAGIC {
             return Err(ArchiveError::InvalidMagic);
         }
 
         let mut version_buf = [0u8; 4];
-        reader.read_exact(&mut version_buf).map_err(|_| ArchiveError::Truncated)?;
+        reader
+            .read_exact(&mut version_buf)
+            .map_err(|_| ArchiveError::Truncated)?;
         let version = u32::from_le_bytes(version_buf);
         if version != FILE_ARCHIVE_VERSION {
             return Err(ArchiveError::UnsupportedVersion(version));
@@ -1001,9 +1079,9 @@ impl FileArchive {
             CompressionMethod::Deflate => {
                 let mut decoder = DeflateDecoder::new(data.as_slice());
                 let mut out = Vec::with_capacity(entry.uncompressed_size as usize);
-                decoder.read_to_end(&mut out).map_err(|e| {
-                    ArchiveError::DecompressionError(format!("deflate: {e}"))
-                })?;
+                decoder
+                    .read_to_end(&mut out)
+                    .map_err(|e| ArchiveError::DecompressionError(format!("deflate: {e}")))?;
                 out
             }
         };
@@ -1187,7 +1265,10 @@ mod tests {
         assert!(names.contains(&"audio.dat"));
         assert!(names.contains(&"notes.bin"));
 
-        assert_eq!(loaded.read_entry("metadata.json").unwrap(), b"{\"version\":1}");
+        assert_eq!(
+            loaded.read_entry("metadata.json").unwrap(),
+            b"{\"version\":1}"
+        );
         assert_eq!(loaded.read_entry("audio.dat").unwrap(), vec![0u8; 1024]);
         assert_eq!(loaded.read_entry("notes.bin").unwrap(), b"note data here");
     }
