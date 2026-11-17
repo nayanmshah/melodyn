@@ -1037,23 +1037,36 @@ impl AraDocumentController {
 
     /// Request analysis of an audio source.
     pub fn request_analysis(&mut self, source_id: AraId) {
+        // Extract what we need before mutating
+        let (mono, sample_rate) = {
+            if let Some(source) = self.document.audio_sources.get(&source_id) {
+                (source.mono_samples(), source.sample_rate)
+            } else {
+                return;
+            }
+        };
+
         if let Some(source) = self.document.audio_sources.get_mut(&source_id) {
             source.analysis_pending = true;
-            self.document
-                .notify(ModelUpdateNotification::AudioSourceAnalysisStarted(source_id));
-            // Run analysis synchronously
-            let mono = source.mono_samples();
-            if !mono.is_empty() {
-                let mut config = self.analysis_config.clone();
-                config.sample_rate = source.sample_rate;
-                let analyzer = melodyn_core::SpectralAnalyzer::new(config);
-                let result = analyzer.analyze(&mono);
-                source.analysis_result = Some(result);
-            }
-            source.analysis_pending = false;
-            self.document
-                .notify(ModelUpdateNotification::AudioSourceAnalysisCompleted(source_id));
         }
+        self.document
+            .notify(ModelUpdateNotification::AudioSourceAnalysisStarted(source_id));
+
+        let result = if !mono.is_empty() {
+            let mut config = self.analysis_config.clone();
+            config.sample_rate = sample_rate;
+            let analyzer = melodyn_core::SpectralAnalyzer::new(config);
+            Some(analyzer.analyze(&mono))
+        } else {
+            None
+        };
+
+        if let Some(source) = self.document.audio_sources.get_mut(&source_id) {
+            source.analysis_result = result;
+            source.analysis_pending = false;
+        }
+        self.document
+            .notify(ModelUpdateNotification::AudioSourceAnalysisCompleted(source_id));
     }
 
     /// Create a modification for a source.
