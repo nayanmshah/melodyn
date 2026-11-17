@@ -8,10 +8,9 @@
 //! - **Vocal range filtering**: Frequency constraints for vocal fundamentals
 //! - **Quality metrics**: SDR, SIR for evaluating separation quality
 
-use crate::fft::{FftEngine, WindowType};
+use crate::fft::WindowType;
 use crate::separation::{compute_stft, inverse_stft};
 use num_complex::Complex;
-use std::f64::consts::PI;
 
 // ---------------------------------------------------------------------------
 // Configuration

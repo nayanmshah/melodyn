@@ -15,6 +15,9 @@
 //! - **Scale**: Scale/key detection, microtonal support, and tuning systems
 //! - **Tempo**: Tempo detection, beat tracking, time signature, and groove analysis
 //! - **Pitch Mapper**: Constraint-based pitch mapping and voice leading optimization
+//! - **Separation**: Blind source separation (HPSS, NMF, spectral subtraction)
+//! - **Multi-Mic**: Multi-microphone spatial source separation (GCC-PHAT, beamforming)
+//! - **Vocal Isolation**: Vocal extraction via center-channel and harmonic masking
 
 pub mod analysis;
 pub mod chord;
@@ -22,12 +25,15 @@ pub mod decomposition;
 pub mod detection;
 pub mod energy_claim;
 pub mod fft;
+pub mod multimic;
 pub mod note;
 pub mod pitch;
 pub mod pitch_mapper;
 pub mod scale;
+pub mod separation;
 pub mod spectral;
 pub mod tempo;
+pub mod vocal_isolation;
 
 // Re-export key types at crate root for convenience
 pub use analysis::{AnalysisConfig, AnalysisResult, SpectralAnalyzer};
@@ -49,4 +55,17 @@ pub use spectral::{
 };
 pub use tempo::{
     BarSignature, BeatGrid, TempoAnalysisResult, TempoAnalyzer, TempoAnalyzerConfig, TempoPeriod,
+};
+
+pub use separation::{
+    HpssConfig, HpssResult, NmfConfig, NmfCostFunction, NmfInitialization, NmfResult,
+    SpectralSubtractionConfig, SpectralSubtractionResult,
+};
+pub use multimic::{
+    BeamformerConfig, MultichannelWienerConfig, MultichannelWienerResult, SpatialClusterConfig,
+    SpatialClusterResult, TdoaConfig, TdoaResult,
+};
+pub use vocal_isolation::{
+    CenterExtractionResult, SeparationQuality, SpectralMask, VocalIsolationConfig,
+    VocalIsolationResult,
 };

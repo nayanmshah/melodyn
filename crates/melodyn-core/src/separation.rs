@@ -10,7 +10,6 @@
 
 use crate::fft::{compute_window, FftEngine, WindowType};
 use num_complex::Complex;
-use std::f64::consts::PI;
 
 // ---------------------------------------------------------------------------
 // HPSS: Harmonic/Percussive Source Separation
