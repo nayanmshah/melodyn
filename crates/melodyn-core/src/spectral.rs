@@ -269,10 +269,10 @@ impl ReassignedSpectrogram {
 
         // Extract frame with zero-padding at edges
         let mut frame = vec![0.0f64; n];
-        for i in 0..n {
+        for (i, frame_val) in frame.iter_mut().enumerate().take(n) {
             let idx = center_sample as isize - half as isize + i as isize;
             if idx >= 0 && (idx as usize) < audio.len() {
-                frame[i] = audio[idx as usize];
+                *frame_val = audio[idx as usize];
             }
         }
 

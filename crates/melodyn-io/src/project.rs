@@ -7,7 +7,7 @@
 //! to source audio by content hash, allowing analysis to be skipped on reopen.
 
 use crate::archive::{
-    ArchiveError, ArchiveResult, BinaryKeyValueArchive, CompressionMethod, FileArchive,
+    ArchiveError, BinaryKeyValueArchive, FileArchive,
 };
 use md5::{Digest, Md5};
 use std::io::{Cursor, Read, Seek, Write};

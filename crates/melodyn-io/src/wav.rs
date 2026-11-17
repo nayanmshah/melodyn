@@ -123,11 +123,7 @@ pub fn wav_info<P: AsRef<Path>>(path: P) -> Result<WavInfo, WavError> {
     let spec = reader.spec();
     let total_samples = reader.len() as usize;
     let num_channels = spec.channels as usize;
-    let samples_per_channel = if num_channels > 0 {
-        total_samples / num_channels
-    } else {
-        0
-    };
+    let samples_per_channel = total_samples.checked_div(num_channels).unwrap_or(0);
     let duration = samples_per_channel as f64 / spec.sample_rate as f64;
 
     Ok(WavInfo {

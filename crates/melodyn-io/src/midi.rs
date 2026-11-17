@@ -5,7 +5,7 @@
 //! MIDI parsing including variable-length quantities, track chunks, tempo maps,
 //! and conversion to/from DetectedNote.
 
-use std::io::{self, Read, Write};
+use std::io::{self, Write};
 
 // ---------------------------------------------------------------------------
 // MIDI event types
@@ -377,7 +377,7 @@ pub fn read_midi(data: &[u8]) -> Result<MidiFile, MidiError> {
     } else {
         // SMPTE: negative frames-per-second in upper byte, ticks-per-frame in lower
         let fps = -(((division >> 8) as i8) as i16);
-        let tpf = (division & 0xFF) as u16;
+        let tpf = division & 0xFF;
         // Convert to approximate ticks-per-quarter at 120 BPM
         (fps as u16) * tpf / 2
     };

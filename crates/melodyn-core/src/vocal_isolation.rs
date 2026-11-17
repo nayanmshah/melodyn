@@ -212,13 +212,13 @@ pub fn generate_harmonic_mask(
             let start = center_bin.saturating_sub(bw);
             let end = (center_bin + bw + 1).min(num_bins);
 
-            for k in start..end {
+            for (k, mask_val) in mask[t].iter_mut().enumerate().take(end).skip(start) {
                 let dist = (k as f64 - center_bin as f64).abs();
                 let weight = (-dist * dist / (2.0 * (bw as f64 / 2.0).powi(2))).exp();
                 // Harmonic decay: higher harmonics get weaker mask
                 let harmonic_weight = 1.0 / (1.0 + 0.1 * (h - 1) as f64);
-                let mask_val = weight * harmonic_weight;
-                mask[t][k] = mask[t][k].max(mask_val).min(1.0);
+                let new_val = weight * harmonic_weight;
+                *mask_val = mask_val.max(new_val).min(1.0);
             }
         }
     }
@@ -234,9 +234,9 @@ pub fn generate_harmonic_mask(
     }
 
     // Enforce floor
-    for t in 0..num_frames {
-        for k in 0..num_bins {
-            mask[t][k] = mask[t][k].max(floor);
+    for mask_row in mask.iter_mut().take(num_frames) {
+        for mask_val in mask_row.iter_mut().take(num_bins) {
+            *mask_val = mask_val.max(floor);
         }
     }
 
@@ -569,16 +569,16 @@ fn smooth_mask_time(
 
     for k in 0..num_bins {
         // Extract column
-        for t in 0..num_frames {
-            temp[t] = mask[t][k];
+        for (t, temp_val) in temp.iter_mut().enumerate().take(num_frames) {
+            *temp_val = mask[t][k];
         }
         // Smooth
-        for t in 0..num_frames {
+        for (t, mask_row) in mask.iter_mut().enumerate().take(num_frames) {
             let start = t.saturating_sub(half);
             let end = (t + half + 1).min(num_frames);
             let count = (end - start) as f64;
             let sum: f64 = temp[start..end].iter().sum();
-            mask[t][k] = sum / count;
+            mask_row[k] = sum / count;
         }
     }
 }
@@ -593,16 +593,16 @@ fn smooth_mask_frequency(
     let half = kernel / 2;
     let mut temp = vec![0.0f64; num_bins];
 
-    for t in 0..num_frames {
+    for mask_row in mask.iter_mut().take(num_frames) {
         // Copy row
-        temp[..num_bins].copy_from_slice(&mask[t][..num_bins]);
+        temp[..num_bins].copy_from_slice(&mask_row[..num_bins]);
         // Smooth
-        for k in 0..num_bins {
+        for (k, mask_val) in mask_row.iter_mut().enumerate().take(num_bins) {
             let start = k.saturating_sub(half);
             let end = (k + half + 1).min(num_bins);
             let count = (end - start) as f64;
             let sum: f64 = temp[start..end].iter().sum();
-            mask[t][k] = sum / count;
+            *mask_val = sum / count;
         }
     }
 }

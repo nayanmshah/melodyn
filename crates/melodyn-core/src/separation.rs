@@ -527,10 +527,10 @@ pub fn compute_stft(
     for t in 0..num_frames {
         // Extract frame with zero-padding at edges
         let mut frame = vec![0.0f64; fft_size];
-        for i in 0..fft_size {
+        for (i, frame_val) in frame.iter_mut().enumerate().take(fft_size) {
             let idx = pos + i;
             if idx < audio.len() {
-                frame[i] = audio[idx];
+                *frame_val = audio[idx];
             }
         }
         let spectrum = engine.forward(&frame);
@@ -615,12 +615,12 @@ fn median_filter_horizontal(spec: &[Vec<f64>], kernel: usize) -> Vec<Vec<f64>> {
     let mut result = vec![vec![0.0; num_bins]; num_frames];
 
     for b in 0..num_bins {
-        for t in 0..num_frames {
+        for (t, result_row) in result.iter_mut().enumerate().take(num_frames) {
             let start = t.saturating_sub(half_k);
             let end = (t + half_k + 1).min(num_frames);
             let mut vals: Vec<f64> = (start..end).map(|tt| spec[tt][b]).collect();
             vals.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
-            result[t][b] = vals[vals.len() / 2];
+            result_row[b] = vals[vals.len() / 2];
         }
     }
     result
@@ -637,13 +637,13 @@ fn median_filter_vertical(spec: &[Vec<f64>], kernel: usize) -> Vec<Vec<f64>> {
 
     let mut result = vec![vec![0.0; num_bins]; num_frames];
 
-    for t in 0..num_frames {
-        for b in 0..num_bins {
+    for (t, result_row) in result.iter_mut().enumerate().take(num_frames) {
+        for (b, result_val) in result_row.iter_mut().enumerate().take(num_bins) {
             let start = b.saturating_sub(half_k);
             let end = (b + half_k + 1).min(num_bins);
             let mut vals: Vec<f64> = (start..end).map(|bb| spec[t][bb]).collect();
-            vals.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
-            result[t][b] = vals[vals.len() / 2];
+            vals.sort_by(|a, bv| a.partial_cmp(bv).unwrap_or(std::cmp::Ordering::Equal));
+            *result_val = vals[vals.len() / 2];
         }
     }
     result
@@ -671,16 +671,16 @@ fn initialize_nmf(
         NmfInitialization::Seeded => {
             // Deterministic pseudo-random initialization using a simple LCG
             let mut seed: u64 = 42;
-            for b in 0..num_bins {
-                for c in 0..k {
+            for w_row in w.iter_mut().take(num_bins) {
+                for w_val in w_row.iter_mut().take(k) {
                     seed = seed.wrapping_mul(6364136223846793005).wrapping_add(1);
-                    w[b][c] = ((seed >> 33) as f64 / u32::MAX as f64) * 0.1 + 0.01;
+                    *w_val = ((seed >> 33) as f64 / u32::MAX as f64) * 0.1 + 0.01;
                 }
             }
-            for c in 0..k {
-                for t in 0..num_frames {
+            for h_row in h.iter_mut().take(k) {
+                for h_val in h_row.iter_mut().take(num_frames) {
                     seed = seed.wrapping_mul(6364136223846793005).wrapping_add(1);
-                    h[c][t] = ((seed >> 33) as f64 / u32::MAX as f64) * 0.1 + 0.01;
+                    *h_val = ((seed >> 33) as f64 / u32::MAX as f64) * 0.1 + 0.01;
                 }
             }
         }
@@ -704,23 +704,23 @@ fn initialize_nmf(
                     if bin < num_bins {
                         let weight = 1.0 / h_num as f64;
                         // Gaussian spread around the harmonic bin
-                        for b in bin.saturating_sub(3)..(bin + 4).min(num_bins) {
+                        for (b, w_row) in w.iter_mut().enumerate().take((bin + 4).min(num_bins)).skip(bin.saturating_sub(3)) {
                             let dist = (b as f64 - bin as f64).abs();
-                            w[b][c] += weight * (-dist * dist / 2.0).exp();
+                            w_row[c] += weight * (-dist * dist / 2.0).exp();
                         }
                     }
                 }
 
                 // Initialize H uniformly
-                for t in 0..num_frames {
-                    h[c][t] = 0.1;
+                for h_val in h[c].iter_mut().take(num_frames) {
+                    *h_val = 0.1;
                 }
             }
 
             // Ensure no zeros in W
-            for b in 0..num_bins {
-                for c in 0..k {
-                    w[b][c] = w[b][c].max(1e-6);
+            for w_row in w.iter_mut().take(num_bins) {
+                for w_val in w_row.iter_mut().take(k) {
+                    *w_val = w_val.max(1e-6);
                 }
             }
         }

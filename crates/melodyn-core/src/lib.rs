@@ -19,6 +19,7 @@
 //! - **Multi-Mic**: Multi-microphone spatial source separation (GCC-PHAT, beamforming)
 //! - **Vocal Isolation**: Vocal extraction via center-channel and harmonic masking
 //! - **Collab**: Collaborative editing sync with operational transformation
+//! - **Network**: TCP-based network transport for collaborative sync
 //! - **Undo**: Enhanced undo/redo with compound operations and named steps
 
 pub mod analysis;
@@ -32,6 +33,7 @@ pub mod document;
 pub mod energy_claim;
 pub mod fft;
 pub mod multimic;
+pub mod network;
 pub mod note;
 pub mod pitch;
 pub mod pitch_mapper;

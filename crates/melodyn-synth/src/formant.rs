@@ -249,8 +249,8 @@ impl FormantModel {
                 1.0
             };
 
-            for bin in lo_bin..=hi_bin.min(num_bins - 1) {
-                magnitude[bin] *= gain;
+            for mag in magnitude.iter_mut().take(hi_bin.min(num_bins - 1) + 1).skip(lo_bin) {
+                *mag *= gain;
             }
         }
     }
@@ -392,9 +392,9 @@ impl FormantProcessor {
     /// synthesis engine.
     pub fn generate_excitation(&self, num_samples: usize, fundamental: f64) -> Vec<f64> {
         let sr = self.model.sample_rate;
-        let period = (sr / fundamental).round() as usize;
+        let _period = (sr / fundamental).round() as usize;
         let mut output = vec![0.0f64; num_samples];
-        let mut phase = 0.0f64;
+        let _phase = 0.0f64;
 
         // Simple pseudo-random using a basic LCG
         let mut rng_state: u64 = 42;
@@ -403,7 +403,7 @@ impl FormantProcessor {
             (*state >> 33) as f64 / (1u64 << 31) as f64 - 1.0
         };
 
-        for i in 0..num_samples {
+        for (i, out_val) in output.iter_mut().enumerate().take(num_samples) {
             let t = i as f64 / sr;
 
             // Fundamental pulse train
@@ -427,10 +427,10 @@ impl FormantProcessor {
             let wave_noise =
                 self.synth_params.wave_noise * pulse.abs() * next_rand(&mut rng_state);
 
-            output[i] = fund + sub2 + sub3 + sub4 + noise + wave_noise;
+            *out_val = fund + sub2 + sub3 + sub4 + noise + wave_noise;
 
             // Time randomization
-            output[i] *=
+            *out_val *=
                 1.0 + self.synth_params.time_random * next_rand(&mut rng_state);
         }
 

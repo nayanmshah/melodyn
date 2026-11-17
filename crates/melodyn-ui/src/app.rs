@@ -2,7 +2,8 @@
 //!
 //! Contains the `MelodynApp` struct (implementing `eframe::App`), the
 //! `AppState` for all editor state, `EditableNote` wrapping detected notes
-//! with edit offsets, undo/redo, file I/O, analysis pipeline, and menu bar.
+//! with edit offsets, undo/redo, file I/O, analysis pipeline, menu bar,
+//! and real-time audio playback via `PlaybackEngine`.
 
 use std::collections::HashSet;
 
@@ -11,6 +12,7 @@ use melodyn_core::{
     AnalysisConfig, AnalysisResult, DetectedNote, DetectionPreset, PitchCandidate,
     SpectralAnalyzer, TempoAnalyzer, TempoAnalyzerConfig,
 };
+use melodyn_core::playback::{NoteEditSnapshot, PlaybackEngine};
 use melodyn_core::scale::{detect_key, distribution_from_notes};
 use melodyn_core::tempo::BeatGrid;
 use melodyn_io::{AudioBuffer, read_wav, write_wav, WavWriteConfig};
@@ -101,6 +103,22 @@ impl EditableNote {
             -100.0
         } else {
             20.0 * amp.log10()
+        }
+    }
+
+    /// Convert to a lightweight snapshot for the render path.
+    pub fn to_edit_snapshot(&self) -> NoteEditSnapshot {
+        NoteEditSnapshot {
+            frequency: self.detected.frequency,
+            midi_note: self.detected.midi_note,
+            start_time: self.detected.start_time,
+            duration: self.detected.duration,
+            amplitude: self.detected.amplitude,
+            pitch_offset: self.pitch_offset,
+            time_offset: self.time_offset,
+            duration_scale: self.duration_scale,
+            amplitude_scale: self.amplitude_scale,
+            formant_shift: self.formant_shift,
         }
     }
 }
@@ -348,7 +366,8 @@ fn compute_waveform_peaks(mono: &[f64], target_peaks: usize) -> Vec<(f32, f32)> 
 // ---------------------------------------------------------------------------
 
 /// Open a WAV file, run analysis, and populate the app state.
-fn open_file(state: &mut AppState, path: &str) {
+/// Returns the stereo channel pair for the playback engine.
+fn open_file(state: &mut AppState, path: &str) -> Option<(Vec<f64>, Vec<f64>, f64)> {
     state.status_message = format!("Loading {}...", path);
 
     // Read WAV
@@ -356,13 +375,21 @@ fn open_file(state: &mut AppState, path: &str) {
         Ok(buf) => buf,
         Err(e) => {
             state.status_message = format!("Error loading file: {}", e);
-            return;
+            return None;
         }
     };
 
     let sample_rate = buffer.sample_rate();
     let mono = buffer.to_mono();
     let duration = buffer.duration();
+
+    // Extract stereo channels for the playback engine before moving buffer
+    let left = buffer.channel(0).to_vec();
+    let right = if buffer.num_channels() >= 2 {
+        buffer.channel(1).to_vec()
+    } else {
+        left.clone()
+    };
 
     // Run spectral analysis
     state.status_message = "Analyzing audio...".to_string();
@@ -454,19 +481,51 @@ fn open_file(state: &mut AppState, path: &str) {
         "Loaded: {} notes, {:.1}s, tempo: {}, key: {}",
         note_count, duration, tempo_str, key_str
     );
+
+    Some((left, right, sample_rate))
 }
 
-/// Export the current audio to a WAV file.
-fn export_wav(state: &AppState, path: &str) {
-    if let Some(ref buffer) = state.audio_buffer {
-        let config = WavWriteConfig::default();
-        match write_wav(path, buffer, &config) {
-            Ok(()) => {
-                log::info!("Exported to {}", path);
-            }
-            Err(e) => {
-                log::error!("Export failed: {}", e);
-            }
+/// Export the current audio to a WAV file, applying note edits.
+///
+/// Collects note edit snapshots and renders through the offline mix,
+/// then writes via the melodyn-io WAV writer.
+fn export_wav_with_edits(state: &AppState, path: &str) {
+    let buffer = match state.audio_buffer.as_ref() {
+        Some(b) => b,
+        None => return,
+    };
+
+    let left = buffer.channel(0).to_vec();
+    let right = if buffer.num_channels() >= 2 {
+        buffer.channel(1).to_vec()
+    } else {
+        left.clone()
+    };
+
+    // Collect note edit snapshots
+    let snapshots: Vec<NoteEditSnapshot> = state
+        .notes
+        .iter()
+        .map(|n| n.to_edit_snapshot())
+        .collect();
+
+    // Render offline mix with edits applied
+    let (out_left, out_right) = PlaybackEngine::render_offline_mix(
+        &left,
+        &right,
+        &snapshots,
+        state.sample_rate,
+    );
+
+    // Build an AudioBuffer and write
+    let out_buffer = AudioBuffer::from_stereo(out_left, out_right, state.sample_rate);
+    let config = WavWriteConfig::default();
+    match write_wav(path, &out_buffer, &config) {
+        Ok(()) => {
+            log::info!("Exported to {} with edits applied", path);
+        }
+        Err(e) => {
+            log::error!("Export failed: {}", e);
         }
     }
 }
@@ -476,7 +535,7 @@ fn export_wav(state: &AppState, path: &str) {
 // ---------------------------------------------------------------------------
 
 /// Draw the application menu bar.
-pub fn menu_bar(ui: &mut egui::Ui, state: &mut AppState) {
+pub fn menu_bar(ui: &mut egui::Ui, state: &mut AppState, engine: &mut Option<PlaybackEngine>) {
     egui::menu::bar(ui, |ui| {
         ui.menu_button("File", |ui| {
             if ui
@@ -489,7 +548,18 @@ pub fn menu_bar(ui: &mut egui::Ui, state: &mut AppState) {
                     .add_filter("All files", &["*"])
                     .pick_file()
                 {
-                    open_file(state, &path.to_string_lossy());
+                    if let Some((left, right, sr)) =
+                        open_file(state, &path.to_string_lossy())
+                    {
+                        let new_engine = PlaybackEngine::new(left, right, sr);
+                        new_engine.set_volume(state.volume);
+                        new_engine.set_loop(
+                            state.loop_enabled,
+                            state.loop_start,
+                            state.loop_end,
+                        );
+                        *engine = Some(new_engine);
+                    }
                 }
             }
 
@@ -506,7 +576,7 @@ pub fn menu_bar(ui: &mut egui::Ui, state: &mut AppState) {
                         .add_filter("WAV files", &["wav"])
                         .save_file()
                     {
-                        export_wav(state, &path.to_string_lossy());
+                        export_wav_with_edits(state, &path.to_string_lossy());
                         state.status_message =
                             format!("Exported to {}", path.display());
                     }
@@ -620,7 +690,11 @@ pub fn menu_bar(ui: &mut egui::Ui, state: &mut AppState) {
             {
                 ui.close_menu();
                 if let Some(ref path) = state.file_path.clone() {
-                    open_file(state, path);
+                    if let Some((left, right, sr)) = open_file(state, path) {
+                        let new_engine = PlaybackEngine::new(left, right, sr);
+                        new_engine.set_volume(state.volume);
+                        *engine = Some(new_engine);
+                    }
                 }
             }
         });
@@ -634,6 +708,8 @@ pub fn menu_bar(ui: &mut egui::Ui, state: &mut AppState) {
 /// Main application struct implementing `eframe::App`.
 pub struct MelodynApp {
     pub state: AppState,
+    /// Real-time playback engine (created when a file is loaded).
+    pub playback_engine: Option<PlaybackEngine>,
 }
 
 impl MelodynApp {
@@ -641,7 +717,71 @@ impl MelodynApp {
     pub fn new(_cc: &eframe::CreationContext<'_>) -> Self {
         Self {
             state: AppState::default(),
+            playback_engine: None,
         }
+    }
+
+    /// Synchronise the playback engine with the UI state.
+    ///
+    /// - Pushes volume and loop settings from UI to engine.
+    /// - Reads the atomic playback position back from the engine.
+    /// - Pumps audio data into the ring buffer.
+    fn sync_playback(&mut self) {
+        let engine = match self.playback_engine.as_mut() {
+            Some(e) => e,
+            None => return,
+        };
+
+        // Push volume to engine
+        engine.set_volume(self.state.volume);
+
+        // Push loop state to engine
+        engine.set_loop(
+            self.state.loop_enabled,
+            self.state.loop_start,
+            self.state.loop_end,
+        );
+
+        // Read position back from the engine's atomic counter
+        if self.state.playing {
+            let engine_pos = engine.position_seconds();
+            self.state.playback_position = engine_pos;
+
+            // Check if engine stopped itself (e.g., reached end of audio)
+            if !engine.shared_state().is_playing() {
+                self.state.playing = false;
+                self.state.status_message = format!(
+                    "Stopped at {:.2}s",
+                    self.state.playback_position
+                );
+            }
+
+            // Feed audio into the ring buffer
+            engine.pump();
+        }
+    }
+
+    /// Start playback through the audio engine.
+    fn start_playback(&mut self) {
+        self.state.playing = true;
+        if let Some(ref engine) = self.playback_engine {
+            // Seek the engine to the current UI position before playing
+            engine.seek(self.state.playback_position);
+            engine.play();
+        }
+        self.state.status_message = "Playing".to_string();
+    }
+
+    /// Stop playback through the audio engine.
+    fn stop_playback(&mut self) {
+        self.state.playing = false;
+        if let Some(ref engine) = self.playback_engine {
+            engine.pause();
+        }
+        self.state.status_message = format!(
+            "Stopped at {:.2}s",
+            self.state.playback_position
+        );
     }
 
     /// Handle global keyboard shortcuts.
@@ -649,71 +789,118 @@ impl MelodynApp {
         // Tool shortcuts
         crate::tools::handle_tool_shortcuts(ctx, &mut self.state);
 
+        let mut toggle_play = false;
+        let mut do_open = false;
+        let mut do_undo = false;
+        let mut do_redo = false;
+        let mut do_select_all = false;
+        let mut do_delete = false;
+        let mut do_home = false;
+        let mut do_zoom_in = false;
+        let mut do_zoom_out = false;
+
         ctx.input(|i| {
             // Space: toggle play
             if i.key_pressed(egui::Key::Space) {
-                self.state.playing = !self.state.playing;
-                if self.state.playing {
-                    self.state.status_message = "Playing".to_string();
-                } else {
-                    self.state.status_message = format!(
-                        "Stopped at {:.2}s",
-                        self.state.playback_position
-                    );
-                }
+                toggle_play = true;
             }
 
             // Ctrl+O: open
             if i.modifiers.command && i.key_pressed(egui::Key::O) {
-                if let Some(path) = rfd::FileDialog::new()
-                    .add_filter("WAV files", &["wav"])
-                    .pick_file()
-                {
-                    open_file(&mut self.state, &path.to_string_lossy());
-                }
+                do_open = true;
             }
 
             // Ctrl+Z: undo, Ctrl+Shift+Z: redo
             if i.modifiers.command && !i.modifiers.shift && i.key_pressed(egui::Key::Z) {
-                self.state.undo();
+                do_undo = true;
             }
             if i.modifiers.command && i.modifiers.shift && i.key_pressed(egui::Key::Z) {
-                self.state.redo();
+                do_redo = true;
             }
 
             // Ctrl+A: select all
             if i.modifiers.command && i.key_pressed(egui::Key::A) {
-                self.state.select_all();
+                do_select_all = true;
             }
 
             // Delete/Backspace: delete selected
             if i.key_pressed(egui::Key::Delete) || i.key_pressed(egui::Key::Backspace) {
-                self.state.delete_selected();
+                do_delete = true;
             }
 
             // Home: go to start
             if i.key_pressed(egui::Key::Home) {
-                self.state.playback_position = 0.0;
-                self.state.time_offset = 0.0;
+                do_home = true;
             }
 
             // Ctrl+=/-: zoom
             if i.modifiers.command && i.key_pressed(egui::Key::Equals) {
-                self.state.time_scale = (self.state.time_scale * 1.25).min(2000.0);
+                do_zoom_in = true;
             }
             if i.modifiers.command && i.key_pressed(egui::Key::Minus) {
-                self.state.time_scale = (self.state.time_scale / 1.25).max(20.0);
+                do_zoom_out = true;
             }
         });
+
+        if toggle_play {
+            if self.state.playing {
+                self.stop_playback();
+            } else {
+                self.start_playback();
+            }
+        }
+
+        if do_open {
+            if let Some(path) = rfd::FileDialog::new()
+                .add_filter("WAV files", &["wav"])
+                .pick_file()
+            {
+                if let Some((left, right, sr)) =
+                    open_file(&mut self.state, &path.to_string_lossy())
+                {
+                    let new_engine = PlaybackEngine::new(left, right, sr);
+                    new_engine.set_volume(self.state.volume);
+                    self.playback_engine = Some(new_engine);
+                }
+            }
+        }
+
+        if do_undo {
+            self.state.undo();
+        }
+        if do_redo {
+            self.state.redo();
+        }
+        if do_select_all {
+            self.state.select_all();
+        }
+        if do_delete {
+            self.state.delete_selected();
+        }
+        if do_home {
+            self.state.playback_position = 0.0;
+            self.state.time_offset = 0.0;
+            if let Some(ref engine) = self.playback_engine {
+                engine.seek(0.0);
+            }
+        }
+        if do_zoom_in {
+            self.state.time_scale = (self.state.time_scale * 1.25).min(2000.0);
+        }
+        if do_zoom_out {
+            self.state.time_scale = (self.state.time_scale / 1.25).max(20.0);
+        }
     }
 }
 
 impl eframe::App for MelodynApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        // Advance playback
+        // Sync playback engine: push volume/loop, read position, pump audio
+        self.sync_playback();
+
+        // If playing, request continuous repaints so the cursor moves smoothly
+        // and the ring buffer gets pumped frequently.
         if self.state.playing {
-            let dt = ctx.input(|i| i.predicted_dt as f64);
-            self.state.advance_playback(dt);
             ctx.request_repaint();
         }
 
@@ -721,7 +908,7 @@ impl eframe::App for MelodynApp {
 
         // Top: menu bar
         egui::TopBottomPanel::top("menu_bar").show(ctx, |ui| {
-            menu_bar(ui, &mut self.state);
+            menu_bar(ui, &mut self.state, &mut self.playback_engine);
         });
 
         // Top: toolbar

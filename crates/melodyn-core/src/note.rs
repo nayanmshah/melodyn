@@ -138,11 +138,11 @@ impl DetectedNote {
         let mut start_frame = None;
         let mut end_frame = None;
 
-        for i in peak_idx..self.amplitude_contour.len() {
-            if start_frame.is_none() && self.amplitude_contour[i] <= threshold_hi {
+        for (i, &amp_val) in self.amplitude_contour.iter().enumerate().skip(peak_idx) {
+            if start_frame.is_none() && amp_val <= threshold_hi {
                 start_frame = Some(i);
             }
-            if start_frame.is_some() && end_frame.is_none() && self.amplitude_contour[i] <= threshold_lo {
+            if start_frame.is_some() && end_frame.is_none() && amp_val <= threshold_lo {
                 end_frame = Some(i);
                 break;
             }
