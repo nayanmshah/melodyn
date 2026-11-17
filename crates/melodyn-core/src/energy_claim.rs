@@ -173,7 +173,7 @@ impl EnergyClaimEngine {
                 let start_bin = center_bin.saturating_sub(self.config.bin_radius);
                 let end_bin = (center_bin + self.config.bin_radius + 1).min(num_bins);
 
-                for bin in start_bin..end_bin {
+                for (bin, total_weight) in bin_total_weight.iter_mut().enumerate().take(end_bin).skip(start_bin) {
                     // Distance-weighted claim (Gaussian-like falloff from center)
                     let dist = (bin as f64 - center_bin as f64).abs();
                     let spatial_weight = (-dist * dist / 2.0).exp();
@@ -188,7 +188,7 @@ impl EnergyClaimEngine {
                         awarded_energy: 0.0,
                     });
 
-                    bin_total_weight[bin] += claim_weight;
+                    *total_weight += claim_weight;
                 }
             }
         }

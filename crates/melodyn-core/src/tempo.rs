@@ -379,7 +379,7 @@ impl BeatGrid {
     }
 
     /// Score how well a phase aligns the beat grid with onset events.
-    fn phase_alignment_score(bpm: f64, phase: f64, onsets: &[OnsetEvent], duration: f64) -> f64 {
+    fn phase_alignment_score(bpm: f64, phase: f64, onsets: &[OnsetEvent], _duration: f64) -> f64 {
         let period = 60.0 / bpm;
         let tolerance = period * 0.15; // 15% of beat period
         let mut score = 0.0;
@@ -640,7 +640,7 @@ pub fn detect_swing(onsets: &[OnsetEvent], bpm: f64) -> f64 {
     }
 
     let beat_period = 60.0 / bpm;
-    let eighth_note = beat_period / 2.0;
+    let _eighth_note = beat_period / 2.0;
     let mut swing_ratios = Vec::new();
 
     // Look at pairs of onsets that are roughly an 8th note apart
@@ -674,8 +674,7 @@ pub fn detect_swing(onsets: &[OnsetEvent], bpm: f64) -> f64 {
 
     let avg_ratio = swing_ratios.iter().sum::<f64>() / swing_ratios.len() as f64;
     // Convert ratio to swing amount: 0.5 = straight, 0.667 = full triplet
-    let swing = ((avg_ratio - 0.5) / (2.0 / 3.0 - 0.5)).clamp(0.0, 1.0);
-    swing
+    ((avg_ratio - 0.5) / (2.0 / 3.0 - 0.5)).clamp(0.0, 1.0)
 }
 
 // ---------------------------------------------------------------------------

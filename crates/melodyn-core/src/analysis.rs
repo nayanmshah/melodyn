@@ -148,8 +148,10 @@ impl SpectralAnalyzer {
 
     /// Create with default config for the given sample rate.
     pub fn with_sample_rate(sample_rate: f64) -> Self {
-        let mut config = AnalysisConfig::default();
-        config.sample_rate = sample_rate;
+        let mut config = AnalysisConfig {
+            sample_rate,
+            ..Default::default()
+        };
         config.stacked_fft_config.sample_rate = sample_rate;
         config.reassigned_config.sample_rate = sample_rate;
         config.pitch_config.sample_rate = sample_rate;

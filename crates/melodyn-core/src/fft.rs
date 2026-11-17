@@ -310,10 +310,10 @@ impl StackedFft {
                 let half = engine.size / 2;
                 // Clamp and zero-pad if near edges
                 let mut frame = vec![0.0f64; engine.size];
-                for i in 0..engine.size {
+                for (i, frame_val) in frame.iter_mut().enumerate().take(engine.size) {
                     let sample_idx = center_sample as isize - half as isize + i as isize;
                     if sample_idx >= 0 && (sample_idx as usize) < audio.len() {
-                        frame[i] = audio[sample_idx as usize];
+                        *frame_val = audio[sample_idx as usize];
                     }
                 }
                 let spectrum = engine.forward(&frame);

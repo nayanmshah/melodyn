@@ -413,7 +413,7 @@ impl PitchDetector {
     /// strongest pitch, subtract its harmonics from the spectrum, repeat.
     pub fn detect_polyphonic(
         &self,
-        audio: &[f64],
+        _audio: &[f64],
         spectral_slices: &[SpectralTimeSlice],
     ) -> Vec<DetectedNote> {
         let sr = self.config.sample_rate;

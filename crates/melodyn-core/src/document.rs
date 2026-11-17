@@ -701,9 +701,9 @@ impl Document {
         track_id: ObjectId,
         element_id: ObjectId,
     ) -> Option<Element> {
+        self.selection.deselect_element(element_id);
+        self.modified = true;
         if let Some(track) = self.track_mut(track_id) {
-            self.selection.deselect_element(element_id);
-            self.modified = true;
             track.remove_element(element_id)
         } else {
             None

@@ -11,6 +11,7 @@ path = "src/main.rs"
 
 [dependencies]
 melodyn-core = { workspace = true }
+melodyn-synth = { workspace = true }
 melodyn-io = { workspace = true }
 eframe = { workspace = true }
 rfd = { workspace = true }

@@ -12,7 +12,6 @@ use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::Arc;
 
 use crate::audio_output::{AudioOutputConfig, AudioOutputStream, SharedPlaybackState};
-use crate::note::DetectedNote;
 
 // ---------------------------------------------------------------------------
 // Playback mode

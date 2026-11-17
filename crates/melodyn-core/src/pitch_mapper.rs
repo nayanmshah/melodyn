@@ -614,7 +614,7 @@ impl PitchRunMapper {
                 let mut best_iv = 0u8;
                 let mut best_dist = 12u8;
                 for &iv in intervals {
-                    let dist = ((rel as i8 - iv as i8).abs() as u8).min(12 - (rel as i8 - iv as i8).unsigned_abs() as u8);
+                    let dist = (rel as i8 - iv as i8).unsigned_abs().min(12 - (rel as i8 - iv as i8).unsigned_abs());
                     if dist < best_dist {
                         best_dist = dist;
                         best_iv = iv;
@@ -655,14 +655,14 @@ impl BlockVoicingMapper {
     pub fn map(
         notes: &[DetectedNote],
         target: &Voicing,
-        config: &PitchMapperConfig,
+        _config: &PitchMapperConfig,
     ) -> Vec<NoteMapping> {
         if notes.is_empty() || target.pitches.is_empty() {
             return Vec::new();
         }
 
         let n = notes.len();
-        let t = target.pitches.len();
+        let _t = target.pitches.len();
 
         // Simple greedy assignment: for each target pitch, find the nearest note
         let mut used = vec![false; n];
@@ -755,7 +755,7 @@ impl VoiceMapper {
     pub fn optimize_voice_leading(
         prev: &[NoteMapping],
         current_notes: &[DetectedNote],
-        config: &PitchMapperConfig,
+        _config: &PitchMapperConfig,
     ) -> Vec<NoteMapping> {
         if prev.is_empty() || current_notes.is_empty() {
             return current_notes
@@ -849,7 +849,7 @@ impl PitchMapper {
         };
 
         // Hill-climbing: try shifting each note by -2..+2 semitones
-        for iteration in 0..3 {
+        for _iteration in 0..3 {
             let mut improved = false;
             for i in 0..mappings.len() {
                 let original = mappings[i].mapped_midi;

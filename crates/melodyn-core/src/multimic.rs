@@ -474,11 +474,11 @@ pub fn mvdr_beamform(
 
         // Average and regularize
         let scale = 1.0 / num_frames as f64;
-        for i in 0..num_channels {
-            for j in 0..num_channels {
-                r_matrix[i][j] *= scale;
+        for (i, row) in r_matrix.iter_mut().enumerate().take(num_channels) {
+            for elem in row.iter_mut().take(num_channels) {
+                *elem *= scale;
             }
-            r_matrix[i][i] += Complex::new(reg, 0.0);
+            row[i] += Complex::new(reg, 0.0);
         }
 
         // Compute MVDR weights: w = R^{-1} d / (d^H R^{-1} d)
@@ -528,7 +528,7 @@ fn mvdr_weights_2x2(
         return d.iter().map(|&s| s * 0.5).collect();
     }
 
-    let r_inv = vec![
+    let r_inv = [
         vec![r[1][1] / det, -r[0][1] / det],
         vec![-r[1][0] / det, r[0][0] / det],
     ];
@@ -635,19 +635,18 @@ pub fn multichannel_wiener_filter(
             }
         }
         let scale = 1.0 / num_frames as f64;
-        for i in 0..num_channels {
-            for j in 0..num_channels {
-                mix_cov[k][i][j] *= scale;
+        for (i, row) in mix_cov[k].iter_mut().enumerate().take(num_channels) {
+            for elem in row.iter_mut().take(num_channels) {
+                *elem *= scale;
             }
-            mix_cov[k][i][i] += Complex::new(config.regularization, 0.0);
+            row[i] += Complex::new(config.regularization, 0.0);
         }
     }
 
     // For each source, estimate its spatial signature and apply Wiener filter
     let mut sources = Vec::with_capacity(num_sources);
 
-    for src in 0..num_sources {
-        let delays = &source_delays[src];
+    for delays in source_delays.iter().take(num_sources) {
         assert_eq!(delays.len(), num_channels);
 
         let mut src_stft = vec![Complex::new(0.0, 0.0); num_frames * n];

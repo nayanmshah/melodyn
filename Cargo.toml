@@ -24,11 +24,8 @@ license = "MIT OR Apache-2.0"
 melodyn-core = { path = "crates/melodyn-core" }
 melodyn-synth = { path = "crates/melodyn-synth" }
 melodyn-io = { path = "crates/melodyn-io" }
-melodyn-plugin = { path = "crates/melodyn-plugin" }
 rustfft = "6.2"
 num-complex = "0.4"
-num-traits = "0.2"
-rayon = "1.10"
 hound = "3.5"
 clap = { version = "4.5", features = ["derive"] }
 thiserror = "2.0"
