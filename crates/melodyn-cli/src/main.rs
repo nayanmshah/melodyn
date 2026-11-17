@@ -153,7 +153,8 @@ fn cmd_analyze(input: &str, preset_name: &str, output: Option<&str>, decompose: 
     let preset = DetectionPreset::from_name(preset_name).unwrap_or_else(|| {
         eprintln!(
             "Unknown preset '{}'. Available: automatic, melodic, polyphonic, percussive, \
-             melodic_adjust_attacks, melodic_no_sibilants, melodic_percussive, polyphonic_unpitched"
+             melodic_adjust_attacks, melodic_no_sibilants, melodic_percussive, polyphonic_unpitched",
+            preset_name
         );
         std::process::exit(1);
     });

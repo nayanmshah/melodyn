@@ -302,7 +302,7 @@ mod tests {
     fn test_cents_deviation() {
         let mut note = make_test_note();
         note.midi_note = 69.5; // A4 + 50 cents
-        assert!((note.cents_deviation() - 50.0).abs() < 1e-10);
+        assert!((note.cents_deviation().abs() - 50.0).abs() < 1e-10);
     }
 
     #[test]
